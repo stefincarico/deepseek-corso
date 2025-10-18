@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'clienti',
     'tesoreria',
     'contabilita',
+    'fornitori',
+    'acquisti',
 ]
 
 MIDDLEWARE = [
