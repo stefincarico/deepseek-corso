@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 from django.db.models import Sum, F
 from decimal import Decimal
 
@@ -115,6 +116,9 @@ class Cliente(models.Model):
         
         return fatturato_complessivo - incassato
     
+    def get_absolute_url(self):
+        return reverse('clienti:dettaglio_cliente', kwargs={'pk': self.pk})
+
     # Validazione: almeno P.IVA o Codice Fiscale
     def clean(self):
         if not self.partita_iva and not self.codice_fiscale:

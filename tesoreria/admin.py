@@ -5,6 +5,13 @@ from django.db.models import Sum, F, Value, DecimalField
 from django.db.models.functions import Coalesce
 from decimal import Decimal
 
+@admin.register(ContoBancario)
+class ContoBancarioAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'tipo_conto', 'saldo_attuale', 'attivo')
+    list_filter = ('tipo_conto', 'attivo')
+    search_fields = ('nome', 'iban', 'intestatario')
+    readonly_fields = ('saldo_attuale',)
+
 @admin.register(Incasso)
 class IncassoAdmin(admin.ModelAdmin):
     list_display = [

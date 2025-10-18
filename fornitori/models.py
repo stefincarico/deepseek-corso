@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 class Fornitore(models.Model):
     """Modello per l'anagrafica fornitori."""
@@ -48,6 +49,9 @@ class Fornitore(models.Model):
     def indirizzo_completo(self):
         parts = [self.indirizzo, self.citta, self.cap, self.provincia]
         return ", ".join(filter(None, parts))
+
+    def get_absolute_url(self):
+        return reverse('fornitori:dettaglio_fornitore', kwargs={'pk': self.pk})
 
     def clean(self):
         if not self.partita_iva and not self.codice_fiscale:

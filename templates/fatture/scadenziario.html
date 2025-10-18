@@ -1,37 +1,59 @@
 {% extends "base.html" %} {% block content %}
 <div class="section">
   <h2>{{ titolo_pagina }}</h2>
+
+  <!-- BARRA FILTRI -->
+  <form method="GET" action="" class="filter-bar">
+    <select name="tipo">
+      <option value="tutte" {% if request.GET.tipo == 'tutte' %}selected{% endif %}>Tutte le Scadenze</option>
+      <option value="attive" {% if request.GET.tipo == 'attive' %}selected{% endif %}>Solo Attive (Clienti)</option>
+      <option value="passive" {% if request.GET.tipo == 'passive' %}selected{% endif %}>Solo Passive (Fornitori)</option>
+    </select>
+    <select name="stato">
+      <option value="tutte" {% if request.GET.stato == 'tutte' %}selected{% endif %}>Tutti gli Stati</option>
+      <option value="scadute" {% if request.GET.stato == 'scadute' %}selected{% endif %}>Solo Scadute</option>
+    </select>
+    <input type="date" name="data_da" value="{{ request.GET.data_da|default:'' }}">
+    <input type="date" name="data_a" value="{{ request.GET.data_a|default:'' }}">
+    <button type="submit" class="button-primary">Filtra</button>
+    <a href="{% url 'fatture:scadenziario' %}" class="button-secondary">Reset</a>
+  </form>
+
   <table class="table">
     <thead>
       <tr>
         <th>Data Scadenza</th>
         <th>Fattura</th>
-        <th>Cliente</th>
+        <th>Soggetto (Cliente/Fornitore)</th>
         <th>Importo Residuo</th>
         <th>Stato</th>
       </tr>
     </thead>
     <tbody>
       {% for scadenza in scadenze %}
-      <tr class="{% if scadenza.is_scaduta %}scadenza-scaduta{% endif %}">
+      <tr class="{% if scadenza.is_scaduta %}scadenza-scaduta{% endif %} {% if scadenza.tipo == 'passiva' %}scadenza-passiva{% endif %}">
         <td>{{ scadenza.data_scadenza|date:"d/m/Y" }}</td>
-        <td>{{ scadenza.fattura.numero }}</td>
         <td>
-          <a
-            href="{% url 'clienti:dettaglio_cliente' scadenza.fattura.cliente.pk %}"
-            >{{ scadenza.fattura.cliente.ragione_sociale }}</a
-          >
+          <a href="{{ scadenza.url_fattura }}">{{ scadenza.riferimento_fattura }}</a>
+        </td>
+        <td>
+          <a href="{{ scadenza.url_soggetto }}">{{ scadenza.soggetto.ragione_sociale }}</a>
         </td>
         <td style="text-align: right; font-weight: bold">
-          € {{ scadenza.residuo_calcolato|floatformat:2 }}
+          {% if scadenza.tipo == 'attiva' %}
+            + € {{ scadenza.residuo|floatformat:2 }}
+          {% else %}
+            - € {{ scadenza.residuo|floatformat:2 }}
+          {% endif %}
         </td>
-        <td>
+        <td style="text-align: center;">
           <span
             class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
-            style="cursor: pointer"
-            data-scadenza-id="{{ scadenza.id }}"
-            data-residuo="{{ scadenza.residuo_calcolato }}"
-            data-fattura-numero="{{ scadenza.fattura.numero }}"
+            style="cursor: pointer;"
+            data-scadenza-id="{{ scadenza.pk }}"
+            data-residuo="{{ scadenza.residuo }}"
+            data-fattura-numero="{{ scadenza.riferimento_fattura }}"
+            data-tipo-scadenza="{{ scadenza.tipo }}"
             >{% if scadenza.is_scaduta %}Scaduta{% else %}Da Pagare{% endif %}</span
           >
         </td>
@@ -46,10 +68,10 @@
 </div>
 
 <!-- MODALE PER REGISTRAZIONE INCASSO -->
-<div id="incassoModal" class="modal">
+<div id="incassoModal" class="modal" style="display: none;">
   <div class="modal-content">
     <div class="modal-header">
-      <span class="close-btn">&times;</span>
+      <span class="close-btn" data-modal-id="incassoModal">&times;</span>
       <h2>Registra Incasso</h2>
       <p id="modalFatturaInfo"></p>
     </div>
@@ -57,6 +79,7 @@
       <form method="POST" action="">
         {% csrf_token %}
         <input type="hidden" name="scadenza_id" id="scadenza_id" />
+        <input type="hidden" name="form_type" value="incasso" />
         {{ incasso_form.residuo_scadenza }}
 
         <div class="form-grid">
@@ -82,6 +105,49 @@
           {{ incasso_form.note }}
         </div>
         <button type="submit" class="button-primary">Registra Incasso</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE PER REGISTRAZIONE SPESA -->
+<div id="spesaModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="close-btn" data-modal-id="spesaModal">&times;</span>
+      <h2>Registra Pagamento</h2>
+      <p id="modalFatturaInfoSpesa"></p>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="">
+        {% csrf_token %}
+        <input type="hidden" name="scadenza_id" id="scadenza_id_spesa" />
+        <input type="hidden" name="form_type" value="spesa" />
+        {{ spesa_form.residuo_scadenza }}
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="id_data_pagamento">Data Pagamento</label>
+            {{ spesa_form.data_pagamento }}
+          </div>
+          <div class="form-group">
+            <label for="id_importo_pagato">Importo Pagato</label>
+            {{ spesa_form.importo_pagato }}
+          </div>
+          <div class="form-group">
+            <label for="id_conto_bancario">Conto di Addebito</label>
+            {{ spesa_form.conto_bancario }}
+          </div>
+          <div class="form-group">
+            <label for="id_metodo_pagamento">Metodo Pagamento</label>
+            {{ spesa_form.metodo_pagamento }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_note">Note</label>
+          {{ spesa_form.note }}
+        </div>
+        <button type="submit" class="button-primary">Registra Pagamento</button>
       </form>
     </div>
   </div>
@@ -156,47 +222,79 @@
     cursor: pointer;
     font-size: 1rem;
   }
+  .filter-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  .filter-bar select, .filter-bar input, .filter-bar button {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .filter-bar button {
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+  }
+  .button-secondary {
+    background: #7f8c8d;
+    color: white;
+    padding: 9px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .scadenza-passiva {
+    background-color: #fdf2e9;
+  }
 </style>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const modal = document.getElementById("incassoModal");
+    const incassoModal = document.getElementById("incassoModal");
+    const spesaModal = document.getElementById("spesaModal");
     const openModalBtns = document.querySelectorAll(".open-modal-btn");
-    const closeModalBtn = document.querySelector(".close-btn");
+    const closeModalBtns = document.querySelectorAll(".close-btn");
 
     openModalBtns.forEach((btn) => {
       btn.addEventListener("click", function () {
         const scadenzaId = this.dataset.scadenzaId;
         const residuo = this.dataset.residuo;
         const fatturaNumero = this.dataset.fatturaNumero;
+        const tipoScadenza = this.dataset.tipoScadenza;
 
-        document.getElementById("scadenza_id").value = scadenzaId;
-        const importoInput = document.getElementById("id_importo_incassato");
-        document.getElementById("id_residuo_scadenza").value = residuo;
-        importoInput.value = parseFloat(residuo).toFixed(2);
-        importoInput.max = residuo;
-
-        const dataInput = document.getElementById("id_data_incasso");
-        if (!dataInput.value) {
-          dataInput.valueAsDate = new Date();
+        if (tipoScadenza === 'attiva') {
+            incassoModal.querySelector("#scadenza_id").value = scadenzaId;
+            const importoInput = incassoModal.querySelector("#id_importo_incassato");
+            incassoModal.querySelector("#id_residuo_scadenza").value = residuo;
+            importoInput.value = parseFloat(residuo).toFixed(2);
+            importoInput.max = residuo;
+            incassoModal.querySelector("#id_data_incasso").valueAsDate = new Date();
+            incassoModal.querySelector("#modalFatturaInfo").innerText = `Rif. Fattura Cliente: ${fatturaNumero}`;
+            incassoModal.style.display = "block";
+        } else if (tipoScadenza === 'passiva') {
+            spesaModal.querySelector("#scadenza_id_spesa").value = scadenzaId;
+            const importoInput = spesaModal.querySelector("#id_importo_pagato");
+            spesaModal.querySelector("#id_residuo_scadenza").value = residuo;
+            importoInput.value = parseFloat(residuo).toFixed(2);
+            importoInput.max = residuo;
+            spesaModal.querySelector("#id_data_pagamento").valueAsDate = new Date();
+            spesaModal.querySelector("#modalFatturaInfoSpesa").innerText = `Rif. Fattura Fornitore: ${fatturaNumero}`;
+            spesaModal.style.display = "block";
         }
-
-        document.getElementById(
-          "modalFatturaInfo"
-        ).innerText = `Rif. Fattura: ${fatturaNumero}`;
-        modal.style.display = "block";
       });
     });
 
-    function closeModal() {
-      modal.style.display = "none";
-    }
-
-    closeModalBtn.addEventListener("click", closeModal);
+    closeModalBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById(this.dataset.modalId).style.display = 'none';
+        });
+    });
 
     window.addEventListener("click", function (event) {
-      if (event.target == modal) {
-        closeModal();
+      if (event.target.classList.contains('modal')) {
+        event.target.style.display = "none";
       }
     });
   });
