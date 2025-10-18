@@ -1,0 +1,328 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+</div>
+
+<!-- SEZIONE 1: ANAGRAFICA -->
+<div class="section">
+  <h3>Dati Anagrafici</h3>
+  <div class="anagrafica-grid">
+    <div><strong>Ragione Sociale:</strong> {{ cliente.ragione_sociale }}</div>
+    <div><strong>Partita IVA:</strong> {{ cliente.partita_iva }}</div>
+    <div>
+      <strong>Codice Fiscale:</strong> {{ cliente.codice_fiscale|default:"N/A"}}
+    </div>
+    <div><strong>Indirizzo:</strong> {{ cliente.indirizzo_completo }}</div>
+    <div><strong>Email:</strong> {{ cliente.email|default:"N/A" }}</div>
+    <div><strong>Telefono:</strong> {{ cliente.telefono|default:"N/A" }}</div>
+    <div>
+      <strong>Stato:</strong>
+      <span
+        class="badge {% if cliente.stato == 'attivo' %}success{% else %}danger{% endif %}"
+        >{{ cliente.get_stato_display }}</span
+      >
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card {% if cliente.credito_residuo > 0 %}alert{% endif %}">
+      <div class="kpi-value">€{{ cliente.credito_residuo|floatformat:2 }}</div>
+      <div class="kpi-label">Credito Residuo</div>
+    </div>
+  </div>
+</div>
+
+<!-- NUOVA SEZIONE: SCADENZIARIO APERTO -->
+<div class="section">
+  <h3>Scadenziario Aperto</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data Scadenza</th>
+        <th>Fattura</th>
+        <th style="text-align: right">Importo Scadenza</th>
+        <th style="text-align: right">Importo Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scadenza in scadenze_aperte %}
+      <tr class="{% if scadenza.is_scaduta %}scadenza-scaduta{% endif %}">
+        <td>{{ scadenza.data_scadenza|date:"d/m/Y" }}</td>
+        <td>{{ scadenza.fattura.numero }}</td>
+        <td style="text-align: right">
+          € {{ scadenza.importo|floatformat:2 }}
+        </td>
+        <td style="text-align: right; font-weight: bold">
+          € {{ scadenza.residuo_calcolato|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
+            style="cursor: pointer"
+            data-scadenza-id="{{ scadenza.id }}"
+            data-residuo="{{ scadenza.residuo_calcolato }}"
+            data-fattura-numero="{{ scadenza.fattura.numero }}"
+            >{% if scadenza.is_scaduta %}Scaduta{% else %}Da Pagare{% endif %}</span
+          >
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessuna scadenza aperta per questo cliente.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SEZIONE 2: ELENCO DOCUMENTI EMESSI -->
+<div class="section">
+  <h3>Elenco Documenti Emessi</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Numero</th>
+        <th>Data Emissione</th>
+        <th style="text-align: right">Importo</th>
+        <th style="text-align: right">Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in documenti_emessi %}
+      <tr>
+        <td>
+          <a href="{% url 'fatture:dettaglio_fattura' doc.pk %}"
+            >{{ doc.numero }}</a
+          >
+        </td>
+        <td>{{ doc.data_emissione|date:"d/m/Y" }}</td>
+        <td style="text-align: right">
+          € {{ doc.totale_complessivo|floatformat:2 }}
+        </td>
+        <td style="text-align: right">
+          € {{ doc.importo_residuo|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if doc.stato == 'pagata' %}success{% elif doc.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}"
+            >{{ doc.get_stato_display }}</span
+          >
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessun documento emesso per questo cliente.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SEZIONE 3: REGISTRO MOVIMENTI CONTABILIZZATI -->
+<div class="section">
+  <h3>Registro Movimenti (Dare/Avere)</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Tipo</th>
+        <th style="width: 40%">Descrizione</th>
+        <th style="text-align: right">Dare (+)</th>
+        <th style="text-align: right">Avere (-)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for movimento in movimenti %}
+      <tr>
+        <td>{{ movimento.data|date:"d/m/Y" }}</td>
+        <td>
+          {% if movimento.tipo == 'Emissione Fattura' %}
+          <span class="badge warning">{{ movimento.tipo }}</span>
+          {% else %}
+          <span class="badge success">{{ movimento.tipo }}</span>
+          {% endif %}
+        </td>
+        <td>{{ movimento.descrizione }}</td>
+        <td style="text-align: right; color: #e74c3c">
+          {% if movimento.importo_dare %}+ €{{ movimento.importo_dare|floatformat:2 }}{% endif %}
+        </td>
+        <td style="text-align: right; color: green">
+          {% if movimento.importo_avere %}- €{{ movimento.importo_avere|floatformat:2 }}{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessun movimento registrato per questo cliente.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- MODALE PER REGISTRAZIONE INCASSO -->
+<div id="incassoModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="close-btn">&times;</span>
+      <h2>Registra Incasso</h2>
+      <p id="modalFatturaInfo"></p>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="">
+        {% csrf_token %}
+        <input type="hidden" name="scadenza_id" id="scadenza_id" />
+        {{ incasso_form.residuo_scadenza }}
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="id_data_incasso">Data Incasso</label>
+            {{ incasso_form.data_incasso }}
+          </div>
+          <div class="form-group">
+            <label for="id_importo_incassato">Importo Incassato</label>
+            {{ incasso_form.importo_incassato }}
+          </div>
+          <div class="form-group">
+            <label for="id_conto_bancario">Conto di Accredito</label>
+            {{ incasso_form.conto_bancario }}
+          </div>
+          <div class="form-group">
+            <label for="id_metodo_pagamento">Metodo Pagamento</label>
+            {{ incasso_form.metodo_pagamento }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="id_note">Note</label>
+          {{ incasso_form.note }}
+        </div>
+        <button type="submit" class="button-primary">Registra Incasso</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 60%;
+    max-width: 700px;
+    border-radius: 8px;
+  }
+  .modal-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .modal-header h2 {
+    margin: 0;
+  }
+  .modal-body {
+    padding-top: 20px;
+  }
+  .close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .button-primary {
+    background: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("incassoModal");
+    const openModalBtns = document.querySelectorAll(".open-modal-btn");
+    const closeModalBtn = document.querySelector(".close-btn");
+
+    openModalBtns.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        // Recupera i dati dal badge cliccato
+        const scadenzaId = this.dataset.scadenzaId;
+        const residuo = this.dataset.residuo;
+        const fatturaNumero = this.dataset.fatturaNumero;
+
+        // Popola i campi del form nella modale
+        document.getElementById("scadenza_id").value = scadenzaId;
+        const importoInput = document.getElementById("id_importo_incassato");
+        document.getElementById("id_residuo_scadenza").value = residuo;
+        importoInput.value = parseFloat(residuo).toFixed(2);
+        importoInput.max = residuo; // Imposta la validazione client-side
+
+        // Imposta la data di oggi come default
+        const dataInput = document.getElementById("id_data_incasso");
+        if (!dataInput.value) {
+          dataInput.valueAsDate = new Date();
+        }
+
+        // Mostra info fattura
+        document.getElementById(
+          "modalFatturaInfo"
+        ).innerText = `Rif. Fattura: ${fatturaNumero}`;
+
+        // Mostra la modale
+        modal.style.display = "block";
+      });
+    });
+
+    // Funzione per chiudere la modale
+    function closeModal() {
+      modal.style.display = "none";
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+
+    // Chiudi la modale se si clicca fuori dal contenuto
+    window.addEventListener("click", function (event) {
+      if (event.target == modal) {
+        closeModal();
+      }
+    });
+  });
+</script>
+
+{% endblock %}

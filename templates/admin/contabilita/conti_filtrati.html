@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>
+    {% if classe_filtro == 'patrimoniale' %}
+        💼 Conti Patrimoniali
+    {% elif classe_filtro == 'economico' %}
+        📈 Conti Economici
+    {% else %}
+        {{ title }}
+    {% endif %}
+</h1>
+
+<div style="margin: 20px 0;">
+    <a href="{% url 'admin:contabilita_pianodeiconti_changelist' %}" class="button">← Torna alla lista completa</a>
+    <a href="{% url 'admin:albero_conti' %}" class="button">🌳 Vista Albero</a>
+    {% if classe_filtro == 'patrimoniale' %}
+        <a href="{% url 'admin:conti_economici' %}" class="button">📈 Vedi Economici</a>
+    {% else %}
+        <a href="{% url 'admin:conti_patrimoniali' %}" class="button">💼 Vedi Patrimoniali</a>
+    {% endif %}
+</div>
+
+<div class="module">
+    <table style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Codice</th>
+                <th>Descrizione</th>
+                <th>Natura</th>
+                <th>Stato</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for conto in queryset %}
+            <tr>
+                <td><strong>{{ conto.codice }}</strong></td>
+                <td>{{ conto.descrizione }}</td>
+                <td>{{ conto.get_natura_display }}</td>
+                <td>
+                    {% if conto.attivo %}
+                        <span style="color: green;">● Attivo</span>
+                    {% else %}
+                        <span style="color: red;">● Disattivo</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.button {
+    background: #417690;
+    color: white;
+    padding: 8px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-right: 10px;
+    display: inline-block;
+}
+.button:hover {
+    background: #305067;
+}
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+th {
+    background: #f5f5f5;
+}
+</style>
+{% endblock %}

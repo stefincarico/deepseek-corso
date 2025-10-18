@@ -1,0 +1,28 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+    <!-- MOSTRA I LINK PERSONALIZZATI -->
+    {% if custom_links %}
+    <div class="module custom-links" style="margin-bottom: 20px;">
+        <h2>Viste Personalizzate</h2>
+        <div class="link-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
+            {% for link in custom_links %}
+            <div class="link-card" style="border: 1px solid #ddd; border-radius: 5px; padding: 15px; background: #f9f9f9;">
+                <h3 style="margin: 0 0 10px 0;">
+                    <a href="{{ link.url }}" style="text-decoration: none; color: #417690; font-size: 1.1em;">
+                        {{ link.label }}
+                    </a>
+                </h3>
+                <p style="margin: 0; color: #666; font-size: 0.9em;">{{ link.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- CONTENUTO ORIGINALE DELL'ADMIN -->
+    {{ block.super }}
+{% endblock %}
+
+{% block pagination %}{{ block.super }}{% endblock %}

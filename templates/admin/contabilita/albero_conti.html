@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>🌳 Albero del Piano dei Conti</h1>
+
+<div style="margin: 20px 0;">
+    <a href="{% url 'admin:contabilita_pianodeiconti_changelist' %}" class="button">← Torna alla lista</a>
+    <a href="{% url 'admin:conti_patrimoniali' %}" class="button">💼 Solo Patrimoniali</a>
+    <a href="{% url 'admin:conti_economici' %}" class="button">📈 Solo Economici</a>
+</div>
+
+<div class="module">
+    {% for conto_radice in conti_radice %}
+        <div class="albero-conto" style="margin-bottom: 15px;">
+            <h3 style="background: #f0f0f0; padding: 10px; margin: 0;">
+                <strong>{{ conto_radice.codice }}</strong> - {{ conto_radice.descrizione }}
+                <span style="float: right; font-size: 0.8em; color: #666;">
+                    {{ conto_radice.get_classe_display }} • {{ conto_radice.get_natura_display }}
+                </span>
+            </h3>
+            
+            {% if conto_radice.sottoconti.all %}
+                <div style="margin-left: 30px; border-left: 2px solid #ddd; padding-left: 15px;">
+                    {% for conto_livello2 in conto_radice.sottoconti.all %}
+                        <div style="margin: 8px 0;">
+                            <strong>{{ conto_livello2.codice }}</strong> - {{ conto_livello2.descrizione }}
+                            <span style="font-size: 0.8em; color: #666;">
+                                ({{ conto_livello2.get_natura_display }})
+                            </span>
+                            
+                            {% if conto_livello2.sottoconti.all %}
+                                <div style="margin-left: 20px; border-left: 1px solid #eee; padding-left: 10px;">
+                                    {% for conto_livello3 in conto_livello2.sottoconti.all %}
+                                        <div style="margin: 5px 0;">
+                                            <strong>{{ conto_livello3.codice }}</strong> - {{ conto_livello3.descrizione }}
+                                            {% if not conto_livello3.attivo %}
+                                                <span style="color: #999;">(disattivo)</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<style>
+.albero-conto {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+.albero-conto h3 {
+    margin: 0;
+}
+.button {
+    background: #417690;
+    color: white;
+    padding: 8px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-right: 10px;
+    display: inline-block;
+}
+.button:hover {
+    background: #305067;
+}
+</style>
+{% endblock %}

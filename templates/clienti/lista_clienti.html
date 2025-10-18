@@ -1,0 +1,45 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Ragione Sociale</th>
+        <th style="text-align: right">Fatturato Totale</th>
+        <th style="text-align: right">Credito Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cliente in clienti %}
+      <tr>
+        <td>
+          <a href="{% url 'clienti:dettaglio_cliente' cliente.pk %}"
+            >{{ cliente.ragione_sociale }}</a
+          >
+        </td>
+        <td style="text-align: right">
+          € {{ cliente.total_fatturato|floatformat:2 }}
+        </td>
+        <td
+          style="text-align: right; {% if cliente.total_residuo > 0 %}font-weight: bold; color: #e74c3c;{% endif %}"
+        >
+          € {{ cliente.total_residuo|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if cliente.stato == 'attivo' %}success{% else %}danger{% endif %}"
+          >
+            {{ cliente.get_stato_display }}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">Nessun cliente trovato.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'base.html' %} {% block content %}
+<!-- KPI PRINCIPALI -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-value">€{{ fatturato_totale|floatformat:2 }}</div>
+    <div class="kpi-label">Fatturato Totale</div>
+  </div>
+
+  <a
+    href="{% url 'fatture:scadenziario' %}"
+    style="text-decoration: none; color: inherit"
+  >
+    <div class="kpi-card {% if credito_clienti > 0 %}alert{% endif %}">
+      <div class="kpi-value">€{{ credito_clienti|floatformat:2 }}</div>
+      <div class="kpi-label">Credito Clienti</div>
+    </div>
+  </a>
+
+  <a
+    href="{% url 'clienti:lista_clienti' %}"
+    style="text-decoration: none; color: inherit"
+  >
+    <div class="kpi-card">
+      <div class="kpi-value">{{ numero_clienti }}</div>
+      <div class="kpi-label">Clienti Attivi</div>
+    </div>
+  </a>
+
+  <div
+    class="kpi-card {% if scadenze_ritardo > 0 %}alert{% else %}success{% endif %}"
+  >
+    <div class="kpi-value">{{ scadenze_ritardo }}</div>
+    <div class="kpi-label">Scadenze in Ritardo</div>
+  </div>
+
+  <a
+    href="{% url 'tesoreria:saldi_conti' %}"
+    style="text-decoration: none; color: inherit"
+  >
+    <div class="kpi-card success">
+      <div class="kpi-value">€{{ saldo_totale|floatformat:2 }}</div>
+      <div class="kpi-label">Liquidità Totale</div>
+    </div>
+  </a>
+
+  <div class="kpi-card success">
+    <div class="kpi-value">
+      €{{ attivo_circolante|floatformat:2 }}
+    </div>
+    <div class="kpi-label">Attivo Circolante</div>
+  </div>
+</div>
+
+<!-- PROSSIME SCADENZE -->
+<div class="section">
+  <h2>📅 Prossime Scadenze (7 giorni)</h2>
+  {% if prossime_scadenze %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Fattura</th>
+        <th>Cliente</th>
+        <th>Scadenza</th>
+        <th>Importo</th>
+        <th>Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scadenza in prossime_scadenze %}
+      <tr>
+        <td>{{ scadenza.fattura.numero }}</td>
+        <td>{{ scadenza.fattura.cliente.ragione_sociale }}</td>
+        <td>{{ scadenza.data_scadenza }}</td>
+        <td>€{{ scadenza.importo|floatformat:2 }}</td>
+        <td>
+          <span class="badge warning">Da Pagare</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>🎉 Nessuna scadenza nei prossimi 7 giorni!</p>
+  {% endif %}
+</div>
+
+<!-- INCASSI RECENTI -->
+<div class="section">
+  <h2>💳 Ultimi Incassi</h2>
+  {% if incassi_recenti %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Fattura</th>
+        <th>Cliente</th>
+        <th>Importo</th>
+        <th>Conto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for incasso in incassi_recenti %}
+      <tr>
+        <td>{{ incasso.data_incasso }}</td>
+        <td>{{ incasso.scadenza.fattura.numero }}</td>
+        <td>{{ incasso.scadenza.fattura.cliente.ragione_sociale }}</td>
+        <td>€{{ incasso.importo_incassato|floatformat:2 }}</td>
+        <td>{{ incasso.conto_bancario.nome }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>Nessun incasso recente</p>
+  {% endif %}
+</div>
+{% endblock %}
