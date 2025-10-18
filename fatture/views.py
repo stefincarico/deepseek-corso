@@ -9,6 +9,9 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum, F, Q
 from django.db.models.functions import Coalesce
 from decimal import Decimal
+from .forms import FatturaForm, ScadenzaFatturaFormSet
+from django.contrib import messages
+from django.db import transaction
 
 def lista_fatture(request):
     """Mostra un elenco di tutte le fatture."""
@@ -157,3 +160,85 @@ def dettaglio_fattura(request, pk):
         'titolo_pagina': f"Dettaglio Fattura N. {fattura.numero}"
     }
     return render(request, 'fatture/dettaglio_fattura.html', context)
+
+def fattura_create(request):
+    """Crea una nuova fattura in stato 'bozza'."""
+    if request.method == 'POST':
+        form = FatturaForm(request.POST)
+        formset = ScadenzaFatturaFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    fattura = form.save(commit=False)
+                    fattura.stato = 'bozza' # Le nuove fatture sono sempre bozze
+                    fattura.save()
+                    formset.instance = fattura
+                    formset.save()
+                    messages.success(request, "Fattura creata come bozza con successo.")
+                    return redirect('fatture:dettaglio_fattura', pk=fattura.pk)
+            except Exception as e:
+                messages.error(request, f"Si è verificato un errore: {e}")
+        else:
+            messages.error(request, "Errore nella compilazione del form. Controlla i campi.")
+    else:
+        form = FatturaForm()
+        formset = ScadenzaFatturaFormSet()
+
+    context = {
+        'form': form,
+        'formset': formset,
+        'titolo_pagina': 'Crea Nuova Fattura'
+    }
+    return render(request, 'fatture/fattura_form.html', context)
+
+def fattura_update(request, pk):
+    """Modifica una fattura in stato 'bozza' e permette di finalizzarla."""
+    fattura = get_object_or_404(Fattura, pk=pk)
+
+    if fattura.stato != 'bozza':
+        messages.error(request, "Questa fattura non è in stato 'bozza' e non può essere modificata.")
+        return redirect('fatture:dettaglio_fattura', pk=fattura.pk)
+
+    if request.method == 'POST':
+        form = FatturaForm(request.POST, instance=fattura)
+        formset = ScadenzaFatturaFormSet(request.POST, instance=fattura)
+
+        if form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    fattura_salvata = form.save(commit=False)
+                    
+                    # Logica per il pulsante "Finalizza"
+                    if 'finalizza' in request.POST:
+                        # Controlla se la somma delle scadenze corrisponde al totale
+                        totale_scadenze = sum(data.get('importo', Decimal('0.00')) for data in formset.cleaned_data if data and not data.get('DELETE'))
+                        if totale_scadenze != fattura_salvata.totale_complessivo():
+                            raise ValidationError(f"La somma delle scadenze (€{totale_scadenze}) non corrisponde al totale fattura (€{fattura_salvata.totale_complessivo()}).")
+                        
+                        fattura_salvata.stato = 'emessa'
+                        messages.success(request, "Fattura finalizzata ed emessa con successo!")
+                    else:
+                        messages.success(request, "Bozza della fattura aggiornata.")
+
+                    fattura_salvata.save()
+                    formset.save()
+                    return redirect('fatture:dettaglio_fattura', pk=fattura.pk)
+
+            except ValidationError as e:
+                messages.error(request, e.message)
+            except Exception as e:
+                messages.error(request, f"Si è verificato un errore imprevisto: {e}")
+        else:
+            messages.error(request, "Errore nella compilazione del form. Controlla i campi.")
+    else:
+        form = FatturaForm(instance=fattura)
+        formset = ScadenzaFatturaFormSet(instance=fattura)
+
+    context = {
+        'form': form,
+        'formset': formset,
+        'fattura': fattura,
+        'titolo_pagina': f'Modifica Bozza Fattura N. {fattura.numero}'
+    }
+    return render(request, 'fatture/fattura_form.html', context)
+

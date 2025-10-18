@@ -74,7 +74,8 @@ class Fattura(models.Model):
     
     def stato_automatico(self):
         """Determina lo stato automaticamente in base agli incassi"""
-        if not self.pk:  # Se la fattura non è ancora salvata, è una bozza
+        # Se la fattura non è ancora salvata o è esplicitamente una bozza, non fare nulla.
+        if not self.pk or self.stato == 'bozza':
             return 'bozza'
             
         importo_incassato = self.importo_incassato()
@@ -89,7 +90,9 @@ class Fattura(models.Model):
     # Override del metodo save per aggiornare lo stato automaticamente
     def save(self, *args, **kwargs):
         # Aggiorna lo stato in base agli incassi
-        self.stato = self.stato_automatico()
+        # ma solo se la fattura non è una bozza.
+        if self.stato != 'bozza':
+            self.stato = self.stato_automatico()
         super().save(*args, **kwargs)
     
     # METODI CORRETTI - CON CONTROLLO None
@@ -110,17 +113,6 @@ class Fattura(models.Model):
         if not hasattr(self, 'scadenze') or not self.scadenze.exists():
             return 0
         return sum(scadenza.importo for scadenza in self.scadenze.all())
-    
-    # Validazione: la somma delle scadenze deve essere uguale all'importo totale
-    def clean(self):
-        # Solo se la fattura è già salvata e ha scadenze
-        if self.pk and hasattr(self, 'scadenze') and self.scadenze.exists():
-            totale_scadenze = self.totale_scadenze()
-            if totale_scadenze != self.totale_complessivo():
-                raise ValidationError(
-                    f"La somma delle scadenze ({totale_scadenze}) non corrisponde "
-                    f"all'importo totale IVA inclusa della fattura ({self.totale_complessivo()})"
-                )
     
     def __str__(self):
         if self.numero and self.importo_totale:

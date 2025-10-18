@@ -1,0 +1,290 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+
+  {% if messages %} {% for message in messages %}
+  <div class="message {{ message.tags }}">{{ message }}</div>
+  {% endfor %} {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <fieldset>
+      <legend>Dati Principali</legend>
+      {% if form.non_field_errors %}
+      <div class="error-list form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="form-grid">
+        <div class="form-group">
+          {{ form.cliente.label_tag }} {{ form.cliente }}
+          <div class="error-list">{{ form.cliente.errors }}</div>
+        </div>
+        <div class="form-group">
+          {{ form.numero.label_tag }} {{ form.numero }}
+          <div class="error-list">{{ form.numero.errors }}</div>
+        </div>
+        <div class="form-group">
+          {{ form.data_emissione.label_tag }} {{ form.data_emissione }}
+          <div class="error-list">{{ form.data_emissione.errors }}</div>
+        </div>
+        <div class="form-group">
+          {{ form.importo_totale.label_tag }} {{ form.importo_totale }}
+          <div class="error-list">{{ form.importo_totale.errors }}</div>
+        </div>
+        <div class="form-group">
+          {{ form.aliquota_iva.label_tag }} {{ form.aliquota_iva }}
+          <div class="error-list">{{ form.aliquota_iva.errors }}</div>
+        </div>
+        <div class="form-group readonly-display">
+          <label>Totale Fattura (IVA incl.)</label>
+          <span id="totale-fattura-display">€ 0.00</span>
+        </div>
+      </div>
+      <div class="form-group">
+        {{ form.descrizione.label_tag }} {{ form.descrizione }}
+        <div class="error-list">{{ form.descrizione.errors }}</div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Scadenze di Pagamento</legend>
+      {{ formset.management_form }} {% if formset.non_form_errors %}
+      <div class="error-list formset-errors">{{ formset.non_form_errors }}</div>
+      {% endif %}
+      <div
+        class="readonly-display"
+        style="text-align: right; margin-bottom: 1rem"
+      >
+        <strong>Residuo da Assegnare:</strong>
+        <span
+          id="residuo-scadenze-display"
+          style="font-size: 1.2rem; font-weight: bold; color: #e74c3c"
+          >€ 0.00</span
+        >
+      </div>
+      <div id="scadenza-form-template" style="display: none">
+        <div class="scadenza-form-row">
+          {{ formset.empty_form.id }}
+          <div class="form-group">
+            {{ formset.empty_form.data_scadenza.label_tag }} {{
+            formset.empty_form.data_scadenza }}
+            <div class="error-list">
+              {{ formset.empty_form.data_scadenza.errors }}
+            </div>
+          </div>
+          <div class="form-group">
+            {{ formset.empty_form.importo.label_tag }} {{
+            formset.empty_form.importo }}
+            <div class="error-list">
+              {{ formset.empty_form.importo.errors }}
+            </div>
+          </div>
+          <div class="form-group delete-checkbox">
+            {{ formset.empty_form.DELETE }}
+          </div>
+          <div class="error-list">{{ formset.empty_form.non_field_errors }}</div>
+        </div>
+      </div>
+
+      <div id="scadenze-container">
+        {% for form in formset %}
+        <div class="scadenza-form-row">
+          {{ form.id }}
+          <div class="form-group">
+            {{ form.data_scadenza.label_tag }} {{ form.data_scadenza }}
+            <div class="error-list">{{ form.data_scadenza.errors }}</div>
+          </div>
+          <div class="form-group">
+            {{ form.importo.label_tag }} {{ form.importo }}
+            <div class="error-list">{{ form.importo.errors }}</div>
+          </div>
+          <div class="form-group delete-checkbox">
+            {% if form.instance.pk %}
+            <label for="{{ form.DELETE.id_for_label }}">Elimina:</label>
+            {{ form.DELETE }} {% else %}{{ form.DELETE }}{% endif %}
+          </div>
+          <div class="error-list">{{ form.non_field_errors }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <button type="button" id="add-scadenza-btn" class="button-secondary">
+        Aggiungi Scadenza
+      </button>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" name="salva_bozza" class="button-secondary">
+        Salva Bozza
+      </button>
+      <button type="submit" name="finalizza" class="button-primary">
+        Finalizza e Emetti
+      </button>
+      <a
+        href="{% if fattura %}{% url 'fatture:dettaglio_fattura' pk=fattura.pk %}{% else %}{% url 'fatture:lista_fatture' %}{% endif %}"
+        class="button"
+        >Annulla</a
+      >
+    </div>
+  </form>
+</div>
+
+<style>
+  .error-list {
+    color: #e74c3c;
+    font-size: 0.9em;
+    margin-top: 4px;
+  }
+  .error-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .form-errors,
+  .formset-errors {
+    background-color: #fbeae5;
+    border: 1px solid #e74c3c;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  fieldset {
+    border: 1px solid #ddd;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  legend {
+    font-weight: bold;
+    color: #34495e;
+    padding: 0 0.5rem;
+  }
+  .scadenza-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px;
+    gap: 1rem;
+    align-items: flex-end;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+  }
+  .delete-checkbox {
+    padding-bottom: 10px;
+  }
+  .form-actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+  }
+  .message {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    color: white;
+  }
+  .message.error {
+    background-color: #e74c3c;
+  }
+  .message.success {
+    background-color: #27ae60;
+  }
+  .readonly-display {
+    background-color: #f0f2f5;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  .readonly-display span {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById("scadenze-container");
+    const addButton = document.getElementById("add-scadenza-btn");
+    const totalFormsInput = document.getElementById("id_scadenze-TOTAL_FORMS");
+    const formTemplate = document.getElementById("scadenza-form-template");
+
+    const imponibileInput = document.getElementById("id_importo_totale");
+    const ivaInput = document.getElementById("id_aliquota_iva");
+    const totaleDisplay = document.getElementById("totale-fattura-display");
+    const residuoDisplay = document.getElementById("residuo-scadenze-display");
+
+    function formatCurrency(value) {
+      return `€ ${value.toLocaleString("it-IT", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+
+    function updateTotals() {
+      const imponibile =
+        parseFloat(imponibileInput.value.replace(",", ".")) || 0;
+      const iva = parseFloat(ivaInput.value.replace(",", ".")) || 0;
+
+      const totaleFattura = imponibile * (1 + iva / 100);
+      totaleDisplay.textContent = formatCurrency(totaleFattura);
+
+      let totaleScadenze = 0;
+      const importiScadenze = container.querySelectorAll(
+        'input[name$="-importo"]'
+      );
+      importiScadenze.forEach((input) => {
+        const deleteCheckbox = container.querySelector(
+          `#id_${input.name.replace("-importo", "-DELETE")}`
+        );
+        if (!deleteCheckbox || !deleteCheckbox.checked) {
+          totaleScadenze += parseFloat(input.value.replace(",", ".")) || 0;
+        }
+      });
+
+      const residuo = totaleFattura - totaleScadenze;
+      residuoDisplay.textContent = formatCurrency(residuo);
+      residuoDisplay.style.color =
+        residuo < 0 ? "#e74c3c" : residuo > 0 ? "#f39c12" : "#27ae60";
+    }
+
+    addButton.addEventListener("click", function () {
+      // Prendi il template del form vuoto fornito da Django
+      // Usiamo il primo figlio perché il div #scadenza-form-template ora contiene la riga formattata
+      let newForm = formTemplate.firstElementChild.cloneNode(true);
+
+      // Ottieni il numero di form correnti da usare come indice
+      let formNum = parseInt(totalFormsInput.value);
+
+      // Aggiorna gli attributi 'name' e 'id' per tutti gli input nel nuovo form
+      newForm.querySelectorAll("input, select").forEach((input) => {
+        input.name = input.name.replace(/__prefix__/g, formNum);
+        input.id = input.id.replace(/__prefix__/g, formNum);
+      });
+
+      // Aggiungi il nuovo form al container
+      container.appendChild(newForm);
+      // Incrementa il contatore dei form totali
+      totalFormsInput.value = formNum + 1;
+      // Aggiorna i totali dopo aver aggiunto una riga
+      updateTotals();
+    });
+
+    // Event listener per i campi principali
+    imponibileInput.addEventListener("input", updateTotals);
+    ivaInput.addEventListener("input", updateTotals);
+
+    // Event listener delegato per gli importi delle scadenze (anche quelle aggiunte dinamicamente)
+    container.addEventListener("input", function (event) {
+      if (event.target && event.target.matches('input[name$="-importo"]')) {
+        updateTotals();
+      }
+    });
+
+    // Calcola i totali al caricamento della pagina (per la modalità di modifica)
+    updateTotals();
+  });
+</script>
+{% endblock %}

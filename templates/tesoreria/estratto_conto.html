@@ -1,0 +1,74 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+
+  <div class="anagrafica-grid" style="margin-bottom: 2rem">
+    <div class="anagrafica-col">
+      <div><strong>Tipo Conto:</strong> {{ conto.get_tipo_conto_display }}</div>
+      {% if conto.iban %}
+      <div><strong>IBAN:</strong> {{ conto.iban }}</div>
+      {% endif %}
+    </div>
+    <div class="anagrafica-col">
+      <div><strong>Intestatario:</strong> {{ conto.intestatario }}</div>
+      {% if conto.nome_banca %}
+      <div><strong>Banca:</strong> {{ conto.nome_banca }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns: 1fr; margin-bottom: 2rem">
+    <div
+      class="kpi-card {% if conto.saldo >= 0 %}success{% else %}alert{% endif %}"
+    >
+      <div class="kpi-value">€ {{ conto.saldo|floatformat:2 }}</div>
+      <div class="kpi-label">Saldo Attuale</div>
+    </div>
+  </div>
+
+  <h3>Dettaglio Movimenti</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrizione Operazione</th>
+        <th style="text-align: right">Entrate (Dare)</th>
+        <th style="text-align: right">Uscite (Avere)</th>
+        <th style="text-align: right">Saldo Progressivo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in movimenti %}
+      <tr>
+        <td>
+          {{ item.movimento.registrazione.data_registrazione|date:"d/m/Y" }}
+        </td>
+        <td>
+          {{ item.movimento.registrazione.descrizione }} {% if
+          item.movimento.registrazione.riferimento %}
+          <small style="display: block; color: #777"
+            >Rif: {{ item.movimento.registrazione.riferimento }}</small
+          >
+          {% endif %}
+        </td>
+        <td style="text-align: right; color: green">
+          {% if item.movimento.tipo_movimento == 'dare' %} + € {{
+          item.movimento.importo|floatformat:2 }} {% endif %}
+        </td>
+        <td style="text-align: right; color: red">
+          {% if item.movimento.tipo_movimento == 'avere' %} - € {{
+          item.movimento.importo|floatformat:2 }} {% endif %}
+        </td>
+        <td style="text-align: right; font-weight: bold">
+          € {{ item.saldo_progressivo|floatformat:2 }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessun movimento trovato per questo conto.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,6 +1,13 @@
 {% extends "base.html" %} {% block content %}
-<div class="section">
+<div style="display: flex; justify-content: space-between; align-items: center">
   <h2>{{ titolo_pagina }}</h2>
+  {% if fattura.stato == 'bozza' %}
+  <a
+    href="{% url 'fatture:fattura_update' pk=fattura.pk %}"
+    class="button-secondary"
+    >Modifica Bozza</a
+  >
+  {% endif %}
 </div>
 
 <!-- SEZIONE 1: TESTATA FATTURA -->
@@ -9,12 +16,24 @@
   <div class="anagrafica-grid">
     <div class="anagrafica-col">
       <div><strong>Numero:</strong> {{ fattura.numero }}</div>
-      <div><strong>Data Emissione:</strong> {{ fattura.data_emissione|date:"d/m/Y" }}</div>
+      <div>
+        <strong>Data Emissione:</strong> {{ fattura.data_emissione|date:"d/m/Y"
+        }}
+      </div>
     </div>
     <div class="anagrafica-col">
-      <div><strong>Cliente:</strong> <a href="{% url 'clienti:dettaglio_cliente' fattura.cliente.pk %}">{{ fattura.cliente.ragione_sociale }}</a></div>
-      <div><strong>Stato:</strong> 
-        <span class="badge {% if fattura.stato == 'pagata' %}success{% elif fattura.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}">{{ fattura.get_stato_display }}</span>
+      <div>
+        <strong>Cliente:</strong>
+        <a href="{% url 'clienti:dettaglio_cliente' fattura.cliente.pk %}"
+          >{{ fattura.cliente.ragione_sociale }}</a
+        >
+      </div>
+      <div>
+        <strong>Stato:</strong>
+        <span
+          class="badge {% if fattura.stato == 'pagata' %}success{% elif fattura.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}"
+          >{{ fattura.get_stato_display }}</span
+        >
       </div>
     </div>
   </div>
@@ -65,24 +84,21 @@
           € {{ scadenza.residuo_calcolato|floatformat:2 }}
         </td>
         <td style="text-align: center">
-          {% if scadenza.stato != 'pagata' %}
-            <span 
-              class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
-              style="cursor: pointer;"
-              data-scadenza-id="{{ scadenza.id }}"
-              data-residuo="{{ scadenza.residuo_calcolato }}"
-              data-fattura-numero="{{ scadenza.fattura.numero }}">
-          {% else %}
+          {# Logica corretta per visualizzare il badge in base allo stato #} {%
+          if scadenza.stato != 'pagata' %}
           <span
-            class="badge {% if scadenza.stato == 'pagata' %}success{% elif scadenza.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}"
+            class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
+            style="cursor: pointer"
+            data-scadenza-id="{{ scadenza.id }}"
+            data-residuo="{{ scadenza.residuo_calcolato }}"
+            data-fattura-numero="{{ scadenza.fattura.numero }}"
+            >Registra Incasso</span
           >
-            {{ scadenza.get_stato_display }}
-          </span>
+          {% else %}
+          <span class="badge success">{{ scadenza.get_stato_display }}</span>
+          {% endif %}
         </td>
       </tr>
-          {% endif %}
-            {{ scadenza.get_stato_display }}
-          </span>
       {% empty %}
       <tr>
         <td colspan="5">Nessuna scadenza definita per questa fattura.</td>
@@ -166,59 +182,109 @@
 </div>
 
 <style>
-  .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-  .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 60%; max-width: 700px; border-radius: 8px; }
-  .modal-header { padding-bottom: 10px; border-bottom: 1px solid #eee; }
-  .modal-header h2 { margin: 0; }
-  .modal-body { padding-top: 20px; }
-  .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
-  .form-group { display: flex; flex-direction: column; }
-  .form-group label { margin-bottom: 5px; font-weight: bold; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-  .button-primary { background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 60%;
+    max-width: 700px;
+    border-radius: 8px;
+  }
+  .modal-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .modal-header h2 {
+    margin: 0;
+  }
+  .modal-body {
+    padding-top: 20px;
+  }
+  .close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const modal = document.getElementById('incassoModal');
-  const openModalBtns = document.querySelectorAll('.open-modal-btn');
-  const closeModalBtn = document.querySelector('.close-btn');
+  document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("incassoModal");
+    const openModalBtns = document.querySelectorAll(".open-modal-btn");
+    const closeModalBtn = document.querySelector(".close-btn");
 
-  openModalBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const scadenzaId = this.dataset.scadenzaId;
-      const residuo = this.dataset.residuo;
-      const fatturaNumero = this.dataset.fatturaNumero;
+    openModalBtns.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const scadenzaId = this.dataset.scadenzaId;
+        const residuo = this.dataset.residuo;
+        const fatturaNumero = this.dataset.fatturaNumero;
 
-      document.getElementById('scadenza_id').value = scadenzaId;
-      const importoInput = document.getElementById('id_importo_incassato');
-      document.getElementById('id_residuo_scadenza').value = residuo;
-      importoInput.value = parseFloat(residuo).toFixed(2);
-      importoInput.max = residuo;
+        document.getElementById("scadenza_id").value = scadenzaId;
+        const importoInput = document.getElementById("id_importo_incassato");
+        document.getElementById("id_residuo_scadenza").value = residuo;
+        importoInput.value = parseFloat(residuo).toFixed(2);
+        importoInput.max = residuo;
 
-      const dataInput = document.getElementById('id_data_incasso');
-      if (!dataInput.value) {
-        dataInput.valueAsDate = new Date();
+        const dataInput = document.getElementById("id_data_incasso");
+        if (!dataInput.value) {
+          dataInput.valueAsDate = new Date();
+        }
+
+        document.getElementById(
+          "modalFatturaInfo"
+        ).innerText = `Rif. Fattura: ${fatturaNumero}`;
+        modal.style.display = "block";
+      });
+    });
+
+    function closeModal() {
+      modal.style.display = "none";
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+
+    window.addEventListener("click", function (event) {
+      if (event.target == modal) {
+        closeModal();
       }
-
-      document.getElementById('modalFatturaInfo').innerText = `Rif. Fattura: ${fatturaNumero}`;
-      modal.style.display = 'block';
     });
   });
-
-  function closeModal() {
-    modal.style.display = 'none';
-  }
-
-  closeModalBtn.addEventListener('click', closeModal);
-
-  window.addEventListener('click', function(event) {
-    if (event.target == modal) {
-      closeModal();
-    }
-  });
-});
 </script>
 
 {% endblock %}
