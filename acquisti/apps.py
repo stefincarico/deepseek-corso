@@ -6,3 +6,6 @@ class AcquistiConfig(AppConfig):
 
     def ready(self):
         import acquisti.signals
+
+    def ready(self):
+        import acquisti.signals

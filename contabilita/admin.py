@@ -4,7 +4,7 @@ from django.urls import path, reverse
 from django.shortcuts import render
 from django.db.models import Q
 from django.http import HttpResponseRedirect
-from .forms import MovimentoForm
+from .forms import MovimentoForm, MovimentoFormSet, RegistrazioneForm
 from .models import PianoDeiConti, RegistrazioneContabile, MovimentoContabile
 
 @admin.register(PianoDeiConti)

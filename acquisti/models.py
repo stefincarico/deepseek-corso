@@ -42,6 +42,12 @@ class FatturaAcquisto(models.Model):
             return Decimal('0.00')
         return self.importo_totale * self.aliquota_iva / 100
 
+    def calcola_iva(self):
+        """Calcola l'IVA solo se abbiamo i dati necessari."""
+        if self.importo_totale is None or self.aliquota_iva is None:
+            return Decimal('0.00')
+        return self.importo_totale * self.aliquota_iva / 100
+
     def importo_pagato(self):
         """Calcola l'importo totale già pagato per questa fattura."""
         if not hasattr(self, 'scadenze_acquisto') or not self.scadenze_acquisto.exists():
