@@ -1,7 +1,8 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import Incasso
+from .models import Incasso, Spesa
 from fatture.models import ScadenzaFattura
+from acquisti.models import ScadenzaFatturaAcquisto
 
 @receiver(post_save, sender=Incasso)
 def gestisci_post_save_incasso(sender, instance, created, **kwargs):
@@ -47,3 +48,41 @@ def gestisci_post_delete_incasso(sender, instance, **kwargs):
     
     # Richiama la stessa logica di aggiornamento stati
     gestisci_post_save_incasso(sender, instance, created=False, **kwargs)
+
+
+@receiver(post_save, sender=Spesa)
+def gestisci_post_save_spesa(sender, instance, created, **kwargs):
+    """
+    Dopo aver salvato una Spesa:
+    1. Se è un nuovo pagamento, aggiorna il saldo del conto.
+    2. Aggiorna lo stato della scadenza e della fattura di acquisto.
+    """
+    if created:
+        instance.conto_bancario.aggiorna_saldo(instance.importo_pagato, 'addebito')
+
+    scadenza = instance.scadenza
+    importo_residuo = scadenza.importo_residuo()
+
+    if importo_residuo <= 0:
+        scadenza.stato = 'pagata'
+        scadenza.data_pagamento = instance.data_pagamento
+    elif importo_residuo < scadenza.importo:
+        scadenza.stato = 'parzialmente_pagata'
+        scadenza.data_pagamento = None
+    else:
+        scadenza.stato = 'da_pagare'
+        scadenza.data_pagamento = None
+    
+    scadenza.save(update_fields=['stato', 'data_pagamento'])
+
+    fattura = scadenza.fattura_acquisto
+    fattura.save()
+
+@receiver(post_delete, sender=Spesa)
+def gestisci_post_delete_spesa(sender, instance, **kwargs):
+    """
+    Dopo aver cancellato una Spesa, riaccredita l'importo sul conto
+    e aggiorna gli stati.
+    """
+    instance.conto_bancario.aggiorna_saldo(instance.importo_pagato, 'accredito')
+    gestisci_post_save_spesa(sender, instance, created=False, **kwargs)

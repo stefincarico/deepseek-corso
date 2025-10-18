@@ -1,0 +1,157 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+</div>
+
+<!-- SEZIONE 1: ANAGRAFICA -->
+<div class="section">
+  <h3>Dati Anagrafici</h3>
+  <div class="anagrafica-grid">
+    <div><strong>Ragione Sociale:</strong> {{ fornitore.ragione_sociale }}</div>
+    <div><strong>Partita IVA:</strong> {{ fornitore.partita_iva }}</div>
+    <div><strong>Indirizzo:</strong> {{ fornitore.indirizzo_completo }}</div>
+    <div>
+      <strong>Stato:</strong>
+      <span
+        class="badge {% if fornitore.stato == 'attivo' %}success{% else %}danger{% endif %}"
+        >{{ fornitore.get_stato_display }}</span
+      >
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card {% if fornitore.debito_residuo > 0 %}alert{% endif %}">
+      <div class="kpi-value">€{{ fornitore.debito_residuo|floatformat:2 }}</div>
+      <div class="kpi-label">Debito Residuo</div>
+    </div>
+  </div>
+</div>
+
+<!-- SEZIONE: SCADENZIARIO APERTO -->
+<div class="section">
+  <h3>Scadenziario Aperto</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data Scadenza</th>
+        <th>Fattura</th>
+        <th style="text-align: right">Importo Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scadenza in scadenze_aperte %}
+      <tr class="{% if scadenza.is_scaduta %}scadenza-scaduta{% endif %}">
+        <td>{{ scadenza.data_scadenza|date:"d/m/Y" }}</td>
+        <td>
+          <a
+            href="{% url 'acquisti:dettaglio_fattura_acquisto' scadenza.fattura_acquisto.pk %}"
+            >{{ scadenza.fattura_acquisto.numero }}</a
+          >
+        </td>
+        <td style="text-align: right; font-weight: bold">
+          € {{ scadenza.residuo_calcolato|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %}"
+          >
+            {% if scadenza.is_scaduta %}Scaduta{% else %}Da Pagare{% endif %}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">Nessuna scadenza aperta per questo fornitore.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SEZIONE: ELENCO DOCUMENTI DI ACQUISTO -->
+<div class="section">
+  <h3>Elenco Documenti di Acquisto</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Numero</th>
+        <th>Data Documento</th>
+        <th style="text-align: right">Importo</th>
+        <th style="text-align: right">Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in documenti_acquisto %}
+      <tr>
+        <td>
+          <a href="{% url 'acquisti:dettaglio_fattura_acquisto' doc.pk %}"
+            >{{ doc.numero }}</a
+          >
+        </td>
+        <td>{{ doc.data_documento|date:"d/m/Y" }}</td>
+        <td style="text-align: right">
+          € {{ doc.totale_complessivo|floatformat:2 }}
+        </td>
+        <td style="text-align: right">
+          € {{ doc.importo_residuo|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if doc.stato == 'pagata' %}success{% elif doc.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}"
+            >{{ doc.get_stato_display }}</span
+          >
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessun documento di acquisto per questo fornitore.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- SEZIONE: REGISTRO MOVIMENTI -->
+<div class="section">
+  <h3>Registro Movimenti (Dare/Avere)</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Tipo</th>
+        <th style="width: 40%">Descrizione</th>
+        <th style="text-align: right">Dare (+)</th>
+        <th style="text-align: right">Avere (-)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for movimento in movimenti %}
+      <tr>
+        <td>{{ movimento.data|date:"d/m/Y" }}</td>
+        <td>
+          {% if movimento.tipo == 'Pagamento' %}
+          <span class="badge danger">{{ movimento.tipo }}</span>
+          {% else %}
+          <span class="badge warning">{{ movimento.tipo }}</span>
+          {% endif %}
+        </td>
+        <td>{{ movimento.descrizione }}</td>
+        <td style="text-align: right; color: #e74c3c">
+          {% if movimento.importo_dare %}+ €{{
+          movimento.importo_dare|floatformat:2 }}{% endif %}
+        </td>
+        <td style="text-align: right; color: green">
+          {% if movimento.importo_avere %}- €{{
+          movimento.importo_avere|floatformat:2 }}{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessun movimento registrato per questo fornitore.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

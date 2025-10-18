@@ -36,6 +36,28 @@
       .nav a:hover {
         background: #3c5a78;
       }
+      .dropdown {
+        position: relative;
+        display: inline-block;
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #34495e;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        border-radius: 4px;
+      }
+      .dropdown-content a {
+        color: #ecf0f1;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+      }
+      .dropdown:hover .dropdown-content {
+        display: block;
+      }
       .container {
         max-width: 1200px;
         margin: 2rem auto;
@@ -140,9 +162,18 @@
 
     <nav class="nav">
       <a href="{% url 'dashboard' %}">Dashboard</a>
-      <a href="{% url 'fatture:lista_fatture' %}">Fatture</a>
+      <div class="dropdown">
+        <a href="#" class="dropbtn">Fatture</a>
+        <div class="dropdown-content">
+          <a href="{% url 'fatture:lista_fatture' %}">Fatture Clienti</a>
+          <a href="{% url 'acquisti:lista_fatture_acquisto' %}"
+            >Fatture Fornitori</a
+          >
+        </div>
+      </div>
       <a href="{% url 'fatture:scadenziario' %}">Scadenziario</a>
       <a href="{% url 'clienti:lista_clienti' %}">Clienti</a>
+      <a href="{% url 'fornitori:lista_fornitori' %}">Fornitori</a>
       <a href="{% url 'tesoreria:saldi_conti' %}">Saldi Conti</a>
       <a href="{% url 'tesoreria:lista_movimenti' %}">Movimenti</a>
       <a href="/admin/" target="_blank">Amministrazione</a>

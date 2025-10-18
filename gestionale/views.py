@@ -11,6 +11,8 @@ def dashboard(request):
     from fatture.models import Fattura, ScadenzaFattura
     from clienti.models import Cliente
     from tesoreria.models import ContoBancario, Incasso
+    from fornitori.models import Fornitore
+    from acquisti.models import FatturaAcquisto
     
     # Calcolo del credito clienti (ottimizzato)
     crediti_aggregati = Fattura.objects.exclude(stato='pagata').aggregate(
@@ -24,6 +26,18 @@ def dashboard(request):
         totale=Sum('saldo_attuale')
     )['totale'] or Decimal('0.00')
 
+    # Calcolo Acquisti Totali (imponibile)
+    acquisti_totali = FatturaAcquisto.objects.aggregate(
+        totale=Sum('importo_totale')
+    )['totale'] or Decimal('0.00')
+
+    # Calcolo Debiti Fornitori
+    debiti_aggregati = FatturaAcquisto.objects.exclude(stato='pagata').aggregate(
+        imponibile=Sum('importo_totale'),
+        iva=Sum(F('importo_totale') * F('aliquota_iva') / 100)
+    )
+    debiti_fornitori = (debiti_aggregati['imponibile'] or Decimal('0.00')) + (debiti_aggregati['iva'] or Decimal('0.00'))
+
     # KPI PRINCIPALI
     context = {
         # Totale fatturato
@@ -32,15 +46,13 @@ def dashboard(request):
         )['totale'] or Decimal('0.00'),
         'credito_clienti': credito_clienti,
         'attivo_circolante': credito_clienti + saldo_totale_conti,
+        'acquisti_totali': acquisti_totali,
+        'debiti_fornitori': debiti_fornitori,
         
         # Numero clienti attivi
         'numero_clienti': Cliente.objects.filter(stato='attivo').count(),
-        
-        # Scadenze in ritardo
-        'scadenze_ritardo': ScadenzaFattura.objects.filter(
-            data_scadenza__lt=timezone.now().date(),
-            stato='da_pagare'
-        ).count(),
+        # Numero fornitori attivi
+        'numero_fornitori': Fornitore.objects.filter(stato='attivo').count(),
         
         # Prossime scadenze (7 giorni)
         'prossime_scadenze': ScadenzaFattura.objects.filter(

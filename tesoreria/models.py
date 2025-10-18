@@ -194,3 +194,50 @@ class Incasso(models.Model):
         verbose_name = "Incasso"
         verbose_name_plural = "Incassi"
         ordering = ['-data_incasso']
+
+
+class Spesa(models.Model):
+    """Modello per rappresentare una singola spesa/pagamento su una scadenza di acquisto."""
+    
+    scadenza = models.ForeignKey(
+        'acquisti.ScadenzaFatturaAcquisto',
+        on_delete=models.CASCADE,
+        related_name='pagamenti',
+        verbose_name="Scadenza Fattura di Acquisto"
+    )
+    
+    conto_bancario = models.ForeignKey(
+        ContoBancario,
+        on_delete=models.PROTECT,
+        related_name='spese',
+        verbose_name="Conto di Addebito"
+    )
+    
+    data_pagamento = models.DateField(
+        verbose_name="Data Pagamento",
+        default=timezone.localdate
+    )
+    
+    importo_pagato = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Importo Pagato",
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    
+    metodo_pagamento = models.CharField(
+        max_length=10,
+        choices=Incasso.METODO_PAGAMENTO,
+        default='bonifico',
+        verbose_name="Metodo di Pagamento"
+    )
+    
+    note = models.TextField(blank=True, verbose_name="Note")
+
+    def __str__(self):
+        return f"Pagamento {self.scadenza.fattura_acquisto.numero} - €{self.importo_pagato} del {self.data_pagamento}"
+
+    class Meta:
+        verbose_name = "Spesa/Pagamento"
+        verbose_name_plural = "Spese/Pagamenti"
+        ordering = ['-data_pagamento']

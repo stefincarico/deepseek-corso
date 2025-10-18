@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ContoBancario, Incasso
+from .models import ContoBancario, Incasso, Spesa
 from django.utils.html import format_html
 from django.db.models import Sum, F, Value, DecimalField
 from django.db.models.functions import Coalesce
@@ -54,3 +54,9 @@ class IncassoAdmin(admin.ModelAdmin):
             
             kwargs["queryset"] = scadenze_aperte
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+@admin.register(Spesa)
+class SpesaAdmin(admin.ModelAdmin):
+    list_display = ['scadenza', 'conto_bancario', 'data_pagamento', 'importo_pagato']
+    list_filter = ['data_pagamento', 'conto_bancario']
+    search_fields = ['scadenza__fattura_acquisto__numero', 'scadenza__fattura_acquisto__fornitore__ragione_sociale']

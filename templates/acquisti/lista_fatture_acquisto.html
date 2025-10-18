@@ -1,0 +1,42 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Numero</th>
+        <th>Fornitore</th>
+        <th>Data Documento</th>
+        <th style="text-align: right">Importo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fattura in fatture %}
+      <tr>
+        <td>
+          <a href="{% url 'acquisti:dettaglio_fattura_acquisto' fattura.pk %}"
+            >{{ fattura.numero }}</a
+          >
+        </td>
+        <td>{{ fattura.fornitore.ragione_sociale }}</td>
+        <td>{{ fattura.data_documento|date:"d/m/Y" }}</td>
+        <td style="text-align: right">
+          € {{ fattura.totale_complessivo|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if fattura.stato == 'pagata' %}success{% elif fattura.stato == 'parzialmente_pagata' %}warning{% else %}danger{% endif %}"
+            >{{ fattura.get_stato_display }}</span
+          >
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5">Nessuna fattura di acquisto trovata.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

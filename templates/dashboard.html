@@ -3,7 +3,12 @@
 <div class="kpi-grid">
   <div class="kpi-card">
     <div class="kpi-value">€{{ fatturato_totale|floatformat:2 }}</div>
-    <div class="kpi-label">Fatturato Totale</div>
+    <div class="kpi-label">Fatturato Totale (Vendite)</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-value">€{{ acquisti_totali|floatformat:2 }}</div>
+    <div class="kpi-label">Acquisti Totali</div>
   </div>
 
   <a
@@ -17,6 +22,16 @@
   </a>
 
   <a
+    href="{% url 'fornitori:lista_fornitori' %}"
+    style="text-decoration: none; color: inherit"
+  >
+    <div class="kpi-card {% if debiti_fornitori > 0 %}alert{% endif %}">
+      <div class="kpi-value">€{{ debiti_fornitori|floatformat:2 }}</div>
+      <div class="kpi-label">Debiti Fornitori</div>
+    </div>
+  </a>
+
+  <a
     href="{% url 'clienti:lista_clienti' %}"
     style="text-decoration: none; color: inherit"
   >
@@ -26,12 +41,15 @@
     </div>
   </a>
 
-  <div
-    class="kpi-card {% if scadenze_ritardo > 0 %}alert{% else %}success{% endif %}"
+  <a
+    href="{% url 'fornitori:lista_fornitori' %}"
+    style="text-decoration: none; color: inherit"
   >
-    <div class="kpi-value">{{ scadenze_ritardo }}</div>
-    <div class="kpi-label">Scadenze in Ritardo</div>
-  </div>
+    <div class="kpi-card">
+      <div class="kpi-value">{{ numero_fornitori }}</div>
+      <div class="kpi-label">Fornitori Attivi</div>
+    </div>
+  </a>
 
   <a
     href="{% url 'tesoreria:saldi_conti' %}"
@@ -44,9 +62,7 @@
   </a>
 
   <div class="kpi-card success">
-    <div class="kpi-value">
-      €{{ attivo_circolante|floatformat:2 }}
-    </div>
+    <div class="kpi-value">€{{ attivo_circolante|floatformat:2 }}</div>
     <div class="kpi-label">Attivo Circolante</div>
   </div>
 </div>

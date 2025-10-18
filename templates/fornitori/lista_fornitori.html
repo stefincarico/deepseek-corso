@@ -1,0 +1,41 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Ragione Sociale</th>
+        <th style="text-align: right">Debito Residuo</th>
+        <th style="text-align: center">Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fornitore in fornitori %}
+      <tr>
+        <td>
+          <a href="{% url 'fornitori:dettaglio_fornitore' fornitore.pk %}"
+            >{{ fornitore.ragione_sociale }}</a
+          >
+        </td>
+        <td
+          style="text-align: right; {% if fornitore.total_debito > 0 %}font-weight: bold; color: #e74c3c;{% endif %}"
+        >
+          € {{ fornitore.total_debito|floatformat:2 }}
+        </td>
+        <td style="text-align: center">
+          <span
+            class="badge {% if fornitore.stato == 'attivo' %}success{% else %}danger{% endif %}"
+          >
+            {{ fornitore.get_stato_display }}
+          </span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3">Nessun fornitore trovato.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
