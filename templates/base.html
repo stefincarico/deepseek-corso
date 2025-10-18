@@ -153,6 +153,26 @@
       .anagrafica-col div {
         padding: 0.25rem 0;
       }
+      /* Stili globali per i form */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
     </style>
   </head>
   <body>
@@ -175,6 +195,7 @@
       <a href="{% url 'clienti:lista_clienti' %}">Clienti</a>
       <a href="{% url 'fornitori:lista_fornitori' %}">Fornitori</a>
       <a href="{% url 'tesoreria:saldi_conti' %}">Saldi Conti</a>
+      <a href="{% url 'contabilita:prima_nota' %}">Prima Nota</a>
       <a href="{% url 'tesoreria:lista_movimenti' %}">Movimenti</a>
       <a href="/admin/" target="_blank">Amministrazione</a>
     </nav>

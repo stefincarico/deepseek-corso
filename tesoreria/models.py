@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import RegexValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
+from contabilita.models import PianoDeiConti, MovimentoContabile
+from django.db.models import Sum
 from django.utils import timezone
 
 class ContoBancario(models.Model):
@@ -54,15 +56,16 @@ class ContoBancario(models.Model):
         blank=True
     )
     
-    # Saldo del conto
-    saldo_attuale = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=0.00,
-        verbose_name="Saldo Attuale",
-        validators=[MinValueValidator(Decimal('0.00'))]
+    # Collega questo conto di tesoreria a un conto del piano dei conti
+    conto_contabile = models.ForeignKey(
+        PianoDeiConti,
+        on_delete=models.PROTECT,
+        verbose_name="Conto Contabile Associato",
+        null=True, blank=True, # Rendilo opzionale per ora
+        limit_choices_to={'codice__startswith': '1.1.0'} # Mostra solo conti di liquidità (Cassa, Banche)
     )
     
+
     # Stato del conto
     attivo = models.BooleanField(
         default=True,
@@ -70,41 +73,30 @@ class ContoBancario(models.Model):
         help_text="Se deselezionato, il conto non sarà più utilizzabile per nuovi movimenti"
     )
     
-    # Metodi per la gestione del saldo
-    def aggiorna_saldo(self, importo, operazione='accredito'):
-        """
-        Aggiorna il saldo del conto in modo sicuro.
-        operazione: 'accredito' o 'addebito'
-        """
-        if operazione == 'accredito':
-            self.saldo_attuale += importo
-        elif operazione == 'addebito':
-            if self.saldo_attuale >= importo:
-                self.saldo_attuale -= importo
-            else:
-                raise ValidationError(f"Saldo insufficiente sul conto {self.nome}")
-        else:
-            raise ValidationError("Operazione non valida")
+    @property
+    def saldo(self):
+        """Calcola il saldo dinamicamente dai movimenti contabili."""
+        if not self.conto_contabile:
+            return Decimal('0.00')
         
-        self.save()
-    
+        movimenti = MovimentoContabile.objects.filter(conto=self.conto_contabile)
+        dare = movimenti.filter(tipo_movimento='dare').aggregate(tot=Sum('importo'))['tot'] or Decimal('0.00')
+        avere = movimenti.filter(tipo_movimento='avere').aggregate(tot=Sum('importo'))['tot'] or Decimal('0.00')
+        return dare - avere
+
     def verifica_disponibilita(self, importo):
         """Verifica se il conto ha sufficiente disponibilità"""
-        return self.saldo_attuale >= importo
+        return self.saldo >= importo
     
     # Validazioni
     def clean(self):
-        # Se è un conto bancario, richiedi IBAN
-        if self.tipo_conto == 'bancario' and not self.iban:
-            raise ValidationError("Per i conti bancari è richiesto l'IBAN")
-        
         # Se è cassa, pulisci i campi bancari
         if self.tipo_conto == 'cassa':
             self.iban = ''
             self.nome_banca = ''
     
     def __str__(self):
-        return f"{self.nome} - Saldo: €{self.saldo_attuale:,.2f}"
+        return f"{self.nome}"
     
     class Meta:
         verbose_name = "Conto Bancario"

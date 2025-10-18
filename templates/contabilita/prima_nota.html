@@ -1,0 +1,215 @@
+{% extends "base.html" %} {% block content %}
+<div class="section">
+  <h2>{{ titolo_pagina }}</h2>
+  <p>Inserisci una nuova registrazione contabile in partita doppia.</p>
+  <button id="show-form-btn" class="button-primary" style="margin-top: 1rem">
+    Nuova Registrazione
+  </button>
+</div>
+
+{% if messages %} {% for message in messages %}
+<div class="message {{ message.tags }}">{{ message }}</div>
+{% endfor %} {% endif %}
+
+<div id="new-registration-section" class="section" style="display: none">
+  <h3>
+    Nuova Registrazione
+    <span
+      id="close-form-btn"
+      class="close-btn"
+      style="font-size: 20px; vertical-align: middle"
+      >&times;</span
+    >
+  </h3>
+  <form method="post" id="prima-nota-form">
+    {% csrf_token %}
+
+    <!-- Form Testata -->
+    <div class="form-grid" style="grid-template-columns: 1fr 2fr 1fr">
+      <div class="form-group">
+        <label for="{{ registrazione_form.data_registrazione.id_for_label }}"
+          >Data</label
+        >
+        {{ registrazione_form.data_registrazione }}
+      </div>
+      <div class="form-group">
+        <label for="{{ registrazione_form.descrizione.id_for_label }}"
+          >Descrizione</label
+        >
+        {{ registrazione_form.descrizione }}
+      </div>
+      <div class="form-group">
+        <label for="{{ registrazione_form.riferimento.id_for_label }}"
+          >Riferimento</label
+        >
+        {{ registrazione_form.riferimento }}
+      </div>
+    </div>
+
+    <!-- FormSet Movimenti -->
+    <fieldset>
+      <legend style="margin-bottom: 1rem">Movimenti (Dare/Avere)</legend>
+      {{ movimento_formset.management_form }}
+      <div class="movimenti-grid-header">
+        <div class="header-item">Conto</div>
+        <div class="header-item">Tipo</div>
+        <div class="header-item">Importo</div>
+        <div class="header-item">Note</div>
+        <div class="header-item"></div>
+      </div>
+      <div id="movimenti-form-container">
+        {% for form in movimento_formset %}
+        <div class="movimento-form-row">
+          <div>{{ form.conto }}</div>
+          <div>{{ form.tipo_movimento }}</div>
+          <div>{{ form.importo }}</div>
+          <div>{{ form.note }}</div>
+          <div class="delete-cell">
+            {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="button" id="add-movimento-btn" class="button-secondary">
+        Aggiungi Riga
+      </button>
+    </fieldset>
+
+    <button type="submit" class="button-primary" style="margin-top: 1rem">
+      Salva Registrazione
+    </button>
+  </form>
+</div>
+
+<div class="section">
+  <h3>Ultime Registrazioni</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrizione</th>
+        <th style="text-align: right">Totale</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for reg in ultime_registrazioni %}
+      <tr>
+        <td>{{ reg.data_registrazione|date:"d/m/Y" }}</td>
+        <td>{{ reg.descrizione }}</td>
+        <td style="text-align: right">
+          € {{ reg.totale_registrazione|floatformat:2 }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3">Nessuna registrazione trovata.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .message {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    color: white;
+  }
+  .message.error {
+    background-color: #e74c3c;
+  }
+  .message.success {
+    background-color: #27ae60;
+  }
+
+  /* Stili per la nuova griglia dei movimenti */
+  .movimenti-grid-header,
+  .movimento-form-row {
+    display: grid;
+    grid-template-columns: 4fr 1fr 2fr 3fr 0.5fr;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .movimenti-grid-header .header-item {
+    font-weight: bold;
+    color: #555;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #ecf0f1;
+  }
+  .movimento-form-row {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .delete-cell {
+    text-align: center;
+  }
+  .delete-cell input[type="checkbox"] {
+    transform: scale(1.5);
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const container = document.getElementById("movimenti-form-container");
+    const addButton = document.getElementById("add-movimento-btn");
+    const totalForms = document.getElementById("id_movimenti-TOTAL_FORMS");
+    const formTemplate = container
+      .querySelector(".movimento-form-row")
+      .cloneNode(true);
+
+    const formSection = document.getElementById("new-registration-section");
+    const showFormBtn = document.getElementById("show-form-btn");
+    const closeFormBtn = document.getElementById("close-form-btn");
+
+    function toggleForm(show) {
+      formSection.style.display = show ? "block" : "none";
+      showFormBtn.style.display = show ? "none" : "inline-block";
+    }
+
+    showFormBtn.addEventListener("click", () => toggleForm(true));
+    closeFormBtn.addEventListener("click", () => toggleForm(false));
+
+    // Se ci sono errori nel form, mostralo al caricamento della pagina
+    if (document.querySelector(".errorlist")) {
+      toggleForm(true);
+    }
+
+    addButton.addEventListener("click", function () {
+      const newForm = formTemplate.cloneNode(true);
+      const formNum = parseInt(totalForms.value);
+
+      // Pulisci i valori e aggiorna gli ID/nomi dei campi
+      newForm
+        .querySelectorAll("input, select, textarea")
+        .forEach(function (input) {
+          const name = input
+            .getAttribute("name")
+            .replace(/-\d+-/, `-${formNum}-`);
+          const id = "id_" + name;
+          input.setAttribute("name", name);
+          input.setAttribute("id", id);
+          input.value = "";
+          if (input.tagName === "SELECT") {
+            input.selectedIndex = 0;
+          }
+        });
+
+      // Aggiungi il checkbox per l'eliminazione
+      const deleteCell = newForm.querySelector(".delete-cell");
+      const deleteInput = document.createElement("input");
+      deleteInput.type = "checkbox";
+      deleteInput.name = `movimenti-${formNum}-DELETE`;
+      deleteInput.id = `id_movimenti-${formNum}-DELETE`;
+      deleteCell.innerHTML = "";
+      deleteCell.appendChild(deleteInput);
+
+      container.appendChild(newForm);
+      totalForms.value = formNum + 1;
+    });
+  });
+</script>
+{% endblock %}

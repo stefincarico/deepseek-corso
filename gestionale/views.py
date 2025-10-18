@@ -21,10 +21,11 @@ def dashboard(request):
     )
     credito_clienti = (crediti_aggregati['imponibile'] or Decimal('0.00')) + (crediti_aggregati['iva'] or Decimal('0.00'))
 
-    # Calcolo del saldo totale dei conti
-    saldo_totale_conti = ContoBancario.objects.aggregate(
-        totale=Sum('saldo_attuale')
-    )['totale'] or Decimal('0.00')
+    # Calcolo del saldo totale dei conti (Liquidità)
+    # Non possiamo più aggregare un campo che non esiste.
+    # Calcoliamo il totale sommando i saldi calcolati di ogni conto.
+    conti_tesoreria = ContoBancario.objects.filter(attivo=True)
+    saldo_totale_conti = sum(conto.saldo for conto in conti_tesoreria)
 
     # Calcolo Acquisti Totali (imponibile)
     acquisti_totali = FatturaAcquisto.objects.aggregate(

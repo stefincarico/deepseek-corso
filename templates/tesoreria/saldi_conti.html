@@ -14,7 +14,7 @@
       <tr>
         <td>{{ conto.nome }}</td>
         <td>{{ conto.get_tipo_conto_display }}</td>
-        <td>€ {{ conto.saldo_attuale|floatformat:2 }}</td>
+        <td>€ {{ conto.saldo|floatformat:2 }}</td>
       </tr>
       {% empty %}
       <tr>

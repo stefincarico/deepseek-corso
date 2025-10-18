@@ -7,10 +7,14 @@ from decimal import Decimal
 
 @admin.register(ContoBancario)
 class ContoBancarioAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'tipo_conto', 'saldo_attuale', 'attivo')
+    list_display = ('nome', 'tipo_conto', 'conto_contabile', 'get_saldo', 'attivo')
     list_filter = ('tipo_conto', 'attivo')
     search_fields = ('nome', 'iban', 'intestatario')
-    readonly_fields = ('saldo_attuale',)
+    readonly_fields = ('get_saldo',)
+
+    def get_saldo(self, obj):
+        return f"€ {obj.saldo:,.2f}"
+    get_saldo.short_description = "Saldo Attuale"
 
 @admin.register(Incasso)
 class IncassoAdmin(admin.ModelAdmin):
