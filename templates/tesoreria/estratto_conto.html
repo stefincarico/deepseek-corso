@@ -44,20 +44,17 @@
           {{ item.movimento.registrazione.data_registrazione|date:"d/m/Y" }}
         </td>
         <td>
-          {{ item.movimento.registrazione.descrizione }} {% if
-          item.movimento.registrazione.riferimento %}
+          {{ item.movimento.registrazione.descrizione }} {% if item.movimento.registrazione.riferimento %}
           <small style="display: block; color: #777"
             >Rif: {{ item.movimento.registrazione.riferimento }}</small
           >
           {% endif %}
         </td>
         <td style="text-align: right; color: green">
-          {% if item.movimento.tipo_movimento == 'dare' %} + € {{
-          item.movimento.importo|floatformat:2 }} {% endif %}
+          {% if item.movimento.tipo_movimento == 'dare' %} + € {{ item.movimento.importo|floatformat:2 }} {% endif %}
         </td>
         <td style="text-align: right; color: red">
-          {% if item.movimento.tipo_movimento == 'avere' %} - € {{
-          item.movimento.importo|floatformat:2 }} {% endif %}
+          {% if item.movimento.tipo_movimento == 'avere' %} - € {{ item.movimento.importo|floatformat:2 }} {% endif %}
         </td>
         <td style="text-align: right; font-weight: bold">
           € {{ item.saldo_progressivo|floatformat:2 }}

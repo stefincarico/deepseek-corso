@@ -1,302 +1,165 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="section">
   <h2>{{ titolo_pagina }}</h2>
 
-  <!-- BARRA FILTRI -->
-  <form method="GET" action="" class="filter-bar">
-    <select name="tipo">
-      <option value="tutte" {% if request.GET.tipo == 'tutte' %}selected{% endif %}>Tutte le Scadenze</option>
-      <option value="attive" {% if request.GET.tipo == 'attive' %}selected{% endif %}>Solo Attive (Clienti)</option>
-      <option value="passive" {% if request.GET.tipo == 'passive' %}selected{% endif %}>Solo Passive (Fornitori)</option>
-    </select>
-    <select name="stato">
-      <option value="tutte" {% if request.GET.stato == 'tutte' %}selected{% endif %}>Tutti gli Stati</option>
-      <option value="scadute" {% if request.GET.stato == 'scadute' %}selected{% endif %}>Solo Scadute</option>
-    </select>
-    <input type="date" name="data_da" value="{{ request.GET.data_da|default:'' }}">
-    <input type="date" name="data_a" value="{{ request.GET.data_a|default:'' }}">
+  <!-- Form Filtri -->
+  <form method="get" class="filter-form">
+    <div class="form-group">
+      <label for="id_tipo">Tipo</label>
+      <select name="tipo" id="id_tipo">
+        <option value="tutte" {% if request.GET.tipo == 'tutte' %}selected{% endif %}>Tutte</option>
+        <option value="attive" {% if request.GET.tipo == 'attive' %}selected{% endif %}>Attive (Incassi)</option>
+        <option value="passive" {% if request.GET.tipo == 'passive' %}selected{% endif %}>Passive (Pagamenti)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="id_stato">Stato</label>
+      <select name="stato" id="id_stato">
+        <option value="tutte" {% if request.GET.stato == 'tutte' %}selected{% endif %}>Tutte</option>
+        <option value="scadute" {% if request.GET.stato == 'scadute' %}selected{% endif %}>Solo Scadute</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="id_data_da">Dal</label>
+      <input type="date" name="data_da" id="id_data_da" value="{{ request.GET.data_da|default:'' }}">
+    </div>
+    <div class="form-group">
+      <label for="id_data_a">Al</label>
+      <input type="date" name="data_a" id="id_data_a" value="{{ request.GET.data_a|default:'' }}">
+    </div>
     <button type="submit" class="button-primary">Filtra</button>
-    <a href="{% url 'fatture:scadenziario' %}" class="button-secondary">Reset</a>
+    <a href="{% url 'fatture:scadenziario' %}" class="button">Reset</a>
   </form>
 
   <table class="table">
     <thead>
       <tr>
+        <th>Tipo</th>
         <th>Data Scadenza</th>
-        <th>Fattura</th>
-        <th>Soggetto (Cliente/Fornitore)</th>
-        <th>Importo Residuo</th>
-        <th>Stato</th>
+        <th>Soggetto</th>
+        <th>Rif. Fattura</th>
+        <th style="text-align: right;">Importo Scadenza</th>
+        <th style="text-align: right;">Importo Residuo</th>
+        <th style="text-align: center;">Azione</th>
       </tr>
     </thead>
     <tbody>
-      {% for scadenza in scadenze %}
-      <tr class="{% if scadenza.is_scaduta %}scadenza-scaduta{% endif %} {% if scadenza.tipo == 'passiva' %}scadenza-passiva{% endif %}">
-        <td>{{ scadenza.data_scadenza|date:"d/m/Y" }}</td>
+      {% for s in scadenze %}
+      <tr class="{% if s.is_scaduta %}scadenza-scaduta{% endif %}">
         <td>
-          <a href="{{ scadenza.url_fattura }}">{{ scadenza.riferimento_fattura }}</a>
-        </td>
-        <td>
-          <a href="{{ scadenza.url_soggetto }}">{{ scadenza.soggetto.ragione_sociale }}</a>
-        </td>
-        <td style="text-align: right; font-weight: bold">
-          {% if scadenza.tipo == 'attiva' %}
-            + € {{ scadenza.residuo|floatformat:2 }}
+          {% if s.tipo == 'attiva' %}
+            <span class="badge success">Incasso</span>
           {% else %}
-            - € {{ scadenza.residuo|floatformat:2 }}
+            <span class="badge danger">Pagamento</span>
           {% endif %}
         </td>
+        <td>{{ s.data_scadenza|date:"d/m/Y" }}</td>
+        <td><a href="{{ s.url_soggetto }}">{{ s.soggetto.ragione_sociale }}</a></td>
+        <td><a href="{{ s.url_fattura }}">{{ s.riferimento_fattura }}</a></td>
+        <td style="text-align: right;">€ {{ s.importo_scadenza|floatformat:2 }}</td>
+        <td style="text-align: right; font-weight: bold;">€ {{ s.residuo|floatformat:2 }}</td>
         <td style="text-align: center;">
-          <span
-            class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
+          <span 
+            class="badge {% if s.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
             style="cursor: pointer;"
-            data-scadenza-id="{{ scadenza.pk }}"
-            data-residuo="{{ scadenza.residuo }}"
-            data-fattura-numero="{{ scadenza.riferimento_fattura }}"
-            data-tipo-scadenza="{{ scadenza.tipo }}"
-            >{% if scadenza.is_scaduta %}Scaduta{% else %}Da Pagare{% endif %}</span
-          >
+            data-scadenza-id="{{ s.pk }}"
+            data-residuo="{{ s.residuo }}"
+            data-form-type="{% if s.tipo == 'attiva' %}incasso{% else %}spesa{% endif %}"
+            data-fattura-numero="{{ s.riferimento_fattura }}">
+            {% if s.tipo == 'attiva' %}Registra Incasso{% else %}Registra Pagamento{% endif %}
+          </span>
         </td>
       </tr>
       {% empty %}
-      <tr>
-        <td colspan="5">Nessuna scadenza aperta trovata.</td>
-      </tr>
+      <tr><td colspan="7">Nessuna scadenza trovata con i filtri selezionati.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
-<!-- MODALE PER REGISTRAZIONE INCASSO -->
-<div id="incassoModal" class="modal" style="display: none;">
+<!-- Modale Incasso -->
+<div id="incassoModal" class="modal">
   <div class="modal-content">
-    <div class="modal-header">
-      <span class="close-btn" data-modal-id="incassoModal">&times;</span>
-      <h2>Registra Incasso</h2>
-      <p id="modalFatturaInfo"></p>
-    </div>
-    <div class="modal-body">
-      <form method="POST" action="">
-        {% csrf_token %}
-        <input type="hidden" name="scadenza_id" id="scadenza_id" />
-        <input type="hidden" name="form_type" value="incasso" />
-        {{ incasso_form.residuo_scadenza }}
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="id_data_incasso">Data Incasso</label>
-            {{ incasso_form.data_incasso }}
-          </div>
-          <div class="form-group">
-            <label for="id_importo_incassato">Importo Incassato</label>
-            {{ incasso_form.importo_incassato }}
-          </div>
-          <div class="form-group">
-            <label for="id_conto_bancario">Conto di Accredito</label>
-            {{ incasso_form.conto_bancario }}
-          </div>
-          <div class="form-group">
-            <label for="id_metodo_pagamento">Metodo Pagamento</label>
-            {{ incasso_form.metodo_pagamento }}
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="id_note">Note</label>
-          {{ incasso_form.note }}
-        </div>
-        <button type="submit" class="button-primary">Registra Incasso</button>
-      </form>
-    </div>
+    <span class="close-btn" data-modal-id="incassoModal">&times;</span>
+    <h2>Registra Incasso</h2>
+    <p id="modalIncassoInfo"></p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="incasso">
+      <input type="hidden" name="scadenza_id" id="incasso_scadenza_id">
+      {{ incasso_form.as_p }}
+      <button type="submit" class="button-primary">Salva Incasso</button>
+    </form>
   </div>
 </div>
 
-<!-- MODALE PER REGISTRAZIONE SPESA -->
-<div id="spesaModal" class="modal" style="display: none;">
+<!-- Modale Spesa -->
+<div id="spesaModal" class="modal">
   <div class="modal-content">
-    <div class="modal-header">
-      <span class="close-btn" data-modal-id="spesaModal">&times;</span>
-      <h2>Registra Pagamento</h2>
-      <p id="modalFatturaInfoSpesa"></p>
-    </div>
-    <div class="modal-body">
-      <form method="POST" action="">
-        {% csrf_token %}
-        <input type="hidden" name="scadenza_id" id="scadenza_id_spesa" />
-        <input type="hidden" name="form_type" value="spesa" />
-        {{ spesa_form.residuo_scadenza }}
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="id_data_pagamento">Data Pagamento</label>
-            {{ spesa_form.data_pagamento }}
-          </div>
-          <div class="form-group">
-            <label for="id_importo_pagato">Importo Pagato</label>
-            {{ spesa_form.importo_pagato }}
-          </div>
-          <div class="form-group">
-            <label for="id_conto_bancario">Conto di Addebito</label>
-            {{ spesa_form.conto_bancario }}
-          </div>
-          <div class="form-group">
-            <label for="id_metodo_pagamento">Metodo Pagamento</label>
-            {{ spesa_form.metodo_pagamento }}
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="id_note">Note</label>
-          {{ spesa_form.note }}
-        </div>
-        <button type="submit" class="button-primary">Registra Pagamento</button>
-      </form>
-    </div>
+    <span class="close-btn" data-modal-id="spesaModal">&times;</span>
+    <h2>Registra Pagamento</h2>
+    <p id="modalSpesaInfo"></p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="spesa">
+      <input type="hidden" name="scadenza_id" id="spesa_scadenza_id">
+      {{ spesa_form.as_p }}
+      <button type="submit" class="button-primary">Salva Pagamento</button>
+    </form>
   </div>
 </div>
 
 <style>
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-  .modal-content {
-    background-color: #fefefe;
-    margin: 10% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 60%;
-    max-width: 700px;
-    border-radius: 8px;
-  }
-  .modal-header {
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-  }
-  .modal-header h2 {
-    margin: 0;
-  }
-  .modal-body {
-    padding-top: 20px;
-  }
-  .close-btn {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 15px;
-  }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-  .form-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  .button-primary {
-    background: #27ae60;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  .filter-bar {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    align-items: center;
-  }
-  .filter-bar select, .filter-bar input, .filter-bar button {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  .filter-bar button {
-    background: #3498db;
-    color: white;
-    cursor: pointer;
-  }
-  .button-secondary {
-    background: #7f8c8d;
-    color: white;
-    padding: 9px 15px;
-    text-decoration: none;
-    border-radius: 4px;
-  }
-  .scadenza-passiva {
-    background-color: #fdf2e9;
-  }
+  .filter-form { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 2rem; background: #f8f9fa; padding: 1rem; border-radius: 8px; }
+  .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+  .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
+  .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
 </style>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const incassoModal = document.getElementById("incassoModal");
-    const spesaModal = document.getElementById("spesaModal");
-    const openModalBtns = document.querySelectorAll(".open-modal-btn");
-    const closeModalBtns = document.querySelectorAll(".close-btn");
+document.addEventListener('DOMContentLoaded', function() {
+    const openModalBtns = document.querySelectorAll('.open-modal-btn');
+    const closeBtns = document.querySelectorAll('.close-btn');
 
-    openModalBtns.forEach((btn) => {
-      btn.addEventListener("click", function () {
-        const scadenzaId = this.dataset.scadenzaId;
-        const residuo = this.dataset.residuo;
-        const fatturaNumero = this.dataset.fatturaNumero;
-        const tipoScadenza = this.dataset.tipoScadenza;
-
-        if (tipoScadenza === 'attiva') {
-            incassoModal.querySelector("#scadenza_id").value = scadenzaId;
-            const importoInput = incassoModal.querySelector("#id_importo_incassato");
-            incassoModal.querySelector("#id_residuo_scadenza").value = residuo;
-            importoInput.value = parseFloat(residuo).toFixed(2);
-            importoInput.max = residuo;
-            incassoModal.querySelector("#id_data_incasso").valueAsDate = new Date();
-            incassoModal.querySelector("#modalFatturaInfo").innerText = `Rif. Fattura Cliente: ${fatturaNumero}`;
-            incassoModal.style.display = "block";
-        } else if (tipoScadenza === 'passiva') {
-            spesaModal.querySelector("#scadenza_id_spesa").value = scadenzaId;
-            const importoInput = spesaModal.querySelector("#id_importo_pagato");
-            spesaModal.querySelector("#id_residuo_scadenza").value = residuo;
-            importoInput.value = parseFloat(residuo).toFixed(2);
-            importoInput.max = residuo;
-            spesaModal.querySelector("#id_data_pagamento").valueAsDate = new Date();
-            spesaModal.querySelector("#modalFatturaInfoSpesa").innerText = `Rif. Fattura Fornitore: ${fatturaNumero}`;
-            spesaModal.style.display = "block";
-        }
-      });
-    });
-
-    closeModalBtns.forEach(btn => {
+    openModalBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            document.getElementById(this.dataset.modalId).style.display = 'none';
+            const formType = this.dataset.formType;
+            const scadenzaId = this.dataset.scadenzaId;
+            const residuo = this.dataset.residuo;
+            const fatturaNumero = this.dataset.fatturaNumero;
+            
+            const modal = document.getElementById(formType + 'Modal');
+            
+            if (formType === 'incasso') {
+                modal.querySelector('#incasso_scadenza_id').value = scadenzaId;
+                modal.querySelector('#modalIncassoInfo').innerText = `Rif. Fattura: ${fatturaNumero}`;
+                const importoInput = modal.querySelector('#id_importo_incassato');
+                if(importoInput) importoInput.value = parseFloat(residuo).toFixed(2);
+            } else { // spesa
+                modal.querySelector('#spesa_scadenza_id').value = scadenzaId;
+                modal.querySelector('#modalSpesaInfo').innerText = `Rif. Fattura: ${fatturaNumero}`;
+                const importoInput = modal.querySelector('#id_importo_pagato');
+                if(importoInput) importoInput.value = parseFloat(residuo).toFixed(2);
+            }
+            
+            modal.style.display = 'block';
         });
     });
 
-    window.addEventListener("click", function (event) {
-      if (event.target.classList.contains('modal')) {
-        event.target.style.display = "none";
-      }
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modalId = this.dataset.modalId;
+            document.getElementById(modalId).style.display = 'none';
+        });
     });
-  });
+
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    });
+});
 </script>
 {% endblock %}

@@ -205,6 +205,15 @@ class MovimentoContabile(models.Model):
         help_text="Conto interessato dal movimento"
     )
     
+    # NUOVO CAMPO: Collega il movimento al conto di tesoreria specifico, se applicabile.
+    conto_tesoreria = models.ForeignKey(
+        'tesoreria.ContoBancario',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Conto Tesoreria Specifico",
+        help_text="Il conto di tesoreria specifico (es. Banca Intesa) movimentato."
+    )
+    
     TIPO_MOVIMENTO = [
         ('dare', 'Dare'),
         ('avere', 'Avere'),

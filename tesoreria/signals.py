@@ -23,7 +23,8 @@ def gestisci_post_save_incasso(sender, instance, created, **kwargs):
             registrazione=reg,
             conto=instance.conto_bancario.conto_contabile,
             tipo_movimento='dare',
-            importo=instance.importo_incassato
+            importo=instance.importo_incassato,
+            conto_tesoreria=instance.conto_bancario  # Collega al conto di tesoreria specifico
         )
         # AVERE: Crediti v/Clienti (diminuisce)
         conto_clienti = PianoDeiConti.objects.get(codice='1.1.03')
@@ -88,7 +89,8 @@ def gestisci_post_save_spesa(sender, instance, created, **kwargs):
             registrazione=reg,
             conto=instance.conto_bancario.conto_contabile,
             tipo_movimento='avere',
-            importo=instance.importo_pagato
+            importo=instance.importo_pagato,
+            conto_tesoreria=instance.conto_bancario  # Collega al conto di tesoreria specifico
         )
 
     scadenza = instance.scadenza

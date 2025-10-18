@@ -30,23 +30,23 @@ def estratto_conto(request, pk):
     conto = get_object_or_404(ContoBancario, pk=pk)
     movimenti_con_saldo = []
     
-    if conto.conto_contabile:
-        movimenti = MovimentoContabile.objects.filter(
-            conto=conto.conto_contabile
-        ).select_related('registrazione').order_by('registrazione__data_registrazione', 'registrazione__id')
-
-        saldo_progressivo = Decimal('0.00')
-        for mov in movimenti:
-            if mov.tipo_movimento == 'dare':
-                saldo_progressivo += mov.importo
-            else: # avere
-                saldo_progressivo -= mov.importo
-            
-            movimenti_con_saldo.append({
-                'movimento': mov,
-                'saldo_progressivo': saldo_progressivo
-            })
-
+    # CORREZIONE: Filtra per il conto di tesoreria specifico, non per il conto generico del piano dei conti.
+    movimenti = MovimentoContabile.objects.filter(
+        conto_tesoreria=conto
+    ).select_related('registrazione').order_by('registrazione__data_registrazione', 'registrazione__id')
+    
+    saldo_progressivo = Decimal('0.00')
+    for mov in movimenti:
+        if mov.tipo_movimento == 'dare':
+            saldo_progressivo += mov.importo
+        else: # avere
+            saldo_progressivo -= mov.importo
+        
+        movimenti_con_saldo.append({
+            'movimento': mov,
+            'saldo_progressivo': saldo_progressivo
+        })
+    
     context = {
         'conto': conto,
         'movimenti': movimenti_con_saldo,

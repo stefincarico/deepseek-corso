@@ -76,13 +76,13 @@ class ContoBancario(models.Model):
     @property
     def saldo(self):
         """Calcola il saldo dinamicamente dai movimenti contabili."""
-        if not self.conto_contabile:
-            return Decimal('0.00')
-        
-        movimenti = MovimentoContabile.objects.filter(conto=self.conto_contabile)
+        # CORREZIONE: Filtra i movimenti per questo specifico conto di tesoreria,
+        # non per il conto generico del piano dei conti.
+        movimenti = MovimentoContabile.objects.filter(conto_tesoreria=self)
         dare = movimenti.filter(tipo_movimento='dare').aggregate(tot=Sum('importo'))['tot'] or Decimal('0.00')
         avere = movimenti.filter(tipo_movimento='avere').aggregate(tot=Sum('importo'))['tot'] or Decimal('0.00')
         return dare - avere
+
 
     def verifica_disponibilita(self, importo):
         """Verifica se il conto ha sufficiente disponibilità"""

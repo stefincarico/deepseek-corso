@@ -93,6 +93,7 @@ def scadenziario(request):
                 'url_fattura': reverse('fatture:dettaglio_fattura', kwargs={'pk': s.fattura.pk}),
                 'soggetto': s.fattura.cliente,
                 'url_soggetto': s.fattura.cliente.get_absolute_url(),
+                'importo_scadenza': s.importo,
                 'residuo': s.residuo_calcolato,
                 'is_scaduta': s.is_scaduta(),
                 'pk': s.pk
@@ -107,6 +108,7 @@ def scadenziario(request):
                 'url_fattura': reverse('acquisti:dettaglio_fattura_acquisto', kwargs={'pk': s.fattura_acquisto.pk}),
                 'soggetto': s.fattura_acquisto.fornitore,
                 'url_soggetto': s.fattura_acquisto.fornitore.get_absolute_url(),
+                'importo_scadenza': s.importo,
                 'residuo': s.residuo_calcolato,
                 'is_scaduta': s.is_scaduta(),
                 'pk': s.pk
@@ -241,4 +243,3 @@ def fattura_update(request, pk):
         'titolo_pagina': f'Modifica Bozza Fattura N. {fattura.numero}'
     }
     return render(request, 'fatture/fattura_form.html', context)
-
