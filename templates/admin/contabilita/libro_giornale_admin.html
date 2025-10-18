@@ -1,0 +1,4 @@
+{% extends "admin/base_site.html" %} {% load static %} {% block extrastyle %} {{ block.super }} {% endblock %} {% block content %}
+<h1>{{ title }}</h1>
+{% include 'tesoreria/lista_movimenti.html' with registrazioni=registrazioni %}
+{% endblock %}

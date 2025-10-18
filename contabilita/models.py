@@ -162,6 +162,12 @@ class RegistrazioneContabile(models.Model):
         totale_avere = sum(mov.importo for mov in self.movimenti.filter(tipo_movimento='avere'))
         return totale_dare == totale_avere
     
+    def totale_registrazione(self):
+        """Calcola il totale della registrazione (somma dei movimenti in Dare)."""
+        return sum(mov.importo for mov in self.movimenti.filter(tipo_movimento='dare'))
+    totale_registrazione.short_description = "Totale"
+    totale_registrazione.admin_order_field = 'movimenti__importo' # Permette un ordinamento approssimativo
+
     # Validazione partita doppia
     def clean(self):
         if self.pk:  # Solo se la registrazione è già stata salvata

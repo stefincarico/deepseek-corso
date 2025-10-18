@@ -82,34 +82,6 @@
   </form>
 </div>
 
-<div class="section">
-  <h3>Ultime Registrazioni</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>Descrizione</th>
-        <th style="text-align: right">Totale</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for reg in ultime_registrazioni %}
-      <tr>
-        <td>{{ reg.data_registrazione|date:"d/m/Y" }}</td>
-        <td>{{ reg.descrizione }}</td>
-        <td style="text-align: right">
-          € {{ reg.totale_registrazione|floatformat:2 }}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="3">Nessuna registrazione trovata.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
 <style>
   .message {
     padding: 1rem;

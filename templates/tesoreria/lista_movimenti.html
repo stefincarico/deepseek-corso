@@ -1,43 +1,93 @@
 {% extends "base.html" %} {% block content %}
 <div class="section">
   <h2>{{ titolo_pagina }}</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>Tipo</th>
-        <th style="width: 40%">Descrizione</th>
-        <th>Conto</th>
-        <th style="text-align: right">Entrate</th>
-        <th style="text-align: right">Uscite</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for movimento in movimenti %}
-      <tr>
-        <td>{{ movimento.data|date:"d/m/Y" }}</td>
-        <td>
-          {% if movimento.is_contabile %}
-          <span class="badge warning">{{ movimento.tipo }}</span>
-          {% else %}
-          <span class="badge success">{{ movimento.tipo }}</span>
-          {% endif %}
-        </td>
-        <td>{{ movimento.descrizione }}</td>
-        <td>{{ movimento.conto }}</td>
-        <td style="text-align: right; color: green">
-          {% if movimento.importo_entrata %}+ €{{ movimento.importo_entrata|floatformat:2 }}{% endif %}
-        </td>
-        <td style="text-align: right; color: red">
-          {% if movimento.importo_uscita %}- €{{ movimento.importo_uscita|floatformat:2 }}{% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="6">Nessun movimento trovato.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <p>Elenco cronologico di tutte le registrazioni contabili.</p>
+
+  <div class="libro-giornale">
+    {% for reg in registrazioni %}
+    <div class="registrazione">
+      <div class="registrazione-header">
+        <span class="data-reg">{{ reg.data_registrazione|date:"d/m/Y" }}</span>
+        <span class="desc-reg">{{ reg.descrizione }}</span>
+        <span class="id-reg">Reg. #{{ reg.id }}</span>
+      </div>
+      <div class="movimenti-container">
+        {% for mov in reg.movimenti.all %}
+        <div class="movimento-row">
+          <div class="conto">
+            {{ mov.conto.codice }} - {{ mov.conto.descrizione }}
+          </div>
+          <div class="importo dare">
+            {% if mov.tipo_movimento == 'dare' %}€ {{ mov.importo|floatformat:2 }}{% endif %}
+          </div>
+          <div class="importo avere">
+            {% if mov.tipo_movimento == 'avere' %}€ {{ mov.importo|floatformat:2 }}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% empty %}
+    <p>Nessuna registrazione contabile trovata.</p>
+    {% endfor %}
+  </div>
 </div>
+
+<style>
+  .libro-giornale .registrazione {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .registrazione-header {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+  }
+  .data-reg {
+    color: #2c3e50;
+  }
+  .desc-reg {
+    flex-grow: 1;
+    margin: 0 1rem;
+    color: #34495e;
+  }
+  .id-reg {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+  }
+  .movimenti-container {
+    padding: 1rem;
+  }
+  .movimento-row {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed #eee;
+  }
+  .movimento-row:last-child {
+    border-bottom: none;
+  }
+  .movimento-row .conto {
+    color: #555;
+  }
+  .movimento-row .importo {
+    text-align: right;
+    font-family: monospace, monospace;
+  }
+  .importo.dare {
+    color: #27ae60;
+  }
+  .importo.avere {
+    color: #c0392b;
+  }
+</style>
+
 {% endblock %}
