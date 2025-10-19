@@ -18,9 +18,9 @@
           >
         </td>
         <td
-          style="text-align: right; {% if fornitore.total_debito > 0 %}font-weight: bold; color: #e74c3c;{% endif %}"
+          style="text-align: right; {% if fornitore.debito_calcolato > 0 %}font-weight: bold; color: #e74c3c;{% endif %}"
         >
-          € {{ fornitore.total_debito|floatformat:2 }}
+          € {{ fornitore.debito_calcolato|floatformat:2 }}
         </td>
         <td style="text-align: center">
           <span

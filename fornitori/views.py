@@ -9,17 +9,17 @@ from django.core.exceptions import ValidationError
 
 def lista_fornitori(request):
     """Mostra un elenco di tutti i fornitori con i totali di debito."""
-    fornitori = Fornitore.objects.annotate(
+    # CORREZIONE: Annotiamo il queryset per calcolare il debito in modo efficiente
+    fornitori = Fornitore.objects.filter(stato='attivo').annotate(
         # Calcoliamo il totale acquistato (IVA inclusa)
-        total_acquistato=Coalesce(Sum('fatture_acquisto__importo_totale'), Decimal('0.00')),
-        total_iva=Coalesce(Sum(F('fatture_acquisto__importo_totale') * F('fatture_acquisto__aliquota_iva') / 100), Decimal('0.00')),
+        total_acquistato=Coalesce(Sum('fatture_acquisto__importo_totale', distinct=True), Decimal('0.00')),
+        total_iva=Coalesce(Sum(F('fatture_acquisto__importo_totale') * F('fatture_acquisto__aliquota_iva') / 100, distinct=True), Decimal('0.00')),
         # Calcoliamo il totale pagato
         total_pagato=Coalesce(Sum('fatture_acquisto__scadenze_acquisto__pagamenti__importo_pagato'), Decimal('0.00'))
     ).annotate(
         # Debito Residuo = (Acquistato + IVA) - Pagato
-        total_debito=(F('total_acquistato') + F('total_iva')) - F('total_pagato')
+        debito_calcolato=(F('total_acquistato') + F('total_iva')) - F('total_pagato')
     ).order_by('ragione_sociale')
-
     context = {
         'fornitori': fornitori,
         'titolo_pagina': 'Elenco Fornitori'

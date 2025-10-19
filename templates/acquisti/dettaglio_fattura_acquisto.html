@@ -1,6 +1,11 @@
 {% extends "base.html" %} {% block content %}
 <div class="section">
-  <h2>{{ titolo_pagina }}</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>{{ titolo_pagina }}</h2>
+    {% if fattura.stato == 'da_registrare' %}
+      <a href="{% url 'acquisti:fattura_acquisto_update' pk=fattura.pk %}" class="button-secondary">Modifica Bozza</a>
+    {% endif %}
+  </div>
 </div>
 
 <!-- SEZIONE 1: TESTATA FATTURA -->

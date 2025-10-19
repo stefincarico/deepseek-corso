@@ -104,8 +104,8 @@ class Cliente(models.Model):
         """Calcola il credito totale residuo del cliente in modo ottimizzato."""
         # Calcola il totale fatturato IVA inclusa
         aggregati = self.fatture.aggregate(
-            totale_imponibile=Sum('importo_totale'),
-            totale_iva=Sum(F('importo_totale') * F('aliquota_iva') / 100)
+            totale_imponibile=Sum('importo_totale', distinct=True),
+            totale_iva=Sum(F('importo_totale') * F('aliquota_iva') / 100, distinct=True)
         )
         fatturato_complessivo = (aggregati['totale_imponibile'] or Decimal('0.00')) + (aggregati['totale_iva'] or Decimal('0.00'))
         

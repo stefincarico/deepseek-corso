@@ -2,24 +2,17 @@ from django.db import models
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.urls import reverse
+from django.db.models import Sum, F
+from decimal import Decimal
 
 class Fornitore(models.Model):
-    """Modello per l'anagrafica fornitori."""
+    """Modello per l'anagrafica dei fornitori."""
     
-    ragione_sociale = models.CharField(
-        max_length=200,
-        verbose_name="Ragione Sociale"
-    )
-    
+    ragione_sociale = models.CharField(max_length=200, verbose_name="Ragione Sociale")
     indirizzo = models.CharField(max_length=255, verbose_name="Indirizzo", blank=True)
     citta = models.CharField(max_length=100, verbose_name="Città", blank=True)
-    cap = models.CharField(
-        max_length=5,
-        verbose_name="CAP",
-        blank=True,
-        validators=[RegexValidator(r'^\d{5}$', 'Il CAP deve avere 5 numeri')]
-    )
-    provincia = models.CharField(max_length=2, verbose_name="Provincia", blank=True)
+    cap = models.CharField(max_length=5, verbose_name="CAP", blank=True, validators=[RegexValidator(r'^\d{5}$', 'Il CAP deve avere 5 numeri')])
+    provincia = models.CharField(max_length=2, verbose_name="Provincia", blank=True, help_text="Sigla provincia (es: MI)")
     
     partita_iva = models.CharField(
         max_length=11,
@@ -27,7 +20,6 @@ class Fornitore(models.Model):
         unique=True,
         validators=[RegexValidator(r'^\d{11}$', 'La P.IVA deve avere 11 numeri')]
     )
-    
     codice_fiscale = models.CharField(max_length=16, verbose_name="Codice Fiscale", blank=True)
     
     email = models.EmailField(verbose_name="Email", blank=True)
@@ -38,17 +30,28 @@ class Fornitore(models.Model):
         ('inattivo', 'Inattivo'),
         ('bloccato', 'Bloccato'),
     ]
-    
-    stato = models.CharField(
-        max_length=10,
-        choices=STATO_FORNITORE,
-        default='attivo',
-        verbose_name="Stato Fornitore"
-    )
-    
+    stato = models.CharField(max_length=10, choices=STATO_FORNITORE, default='attivo', verbose_name="Stato Fornitore")
+
     def indirizzo_completo(self):
         parts = [self.indirizzo, self.citta, self.cap, self.provincia]
         return ", ".join(filter(None, parts))
+
+    @property
+    def debito_residuo(self):
+        """Calcola il debito totale residuo verso il fornitore."""
+        # Calcola il totale fatturato IVA inclusa
+        aggregati = self.fatture_acquisto.aggregate(
+            totale_imponibile=Sum('importo_totale', distinct=True),
+            totale_iva=Sum(F('importo_totale') * F('aliquota_iva') / 100, distinct=True)
+        )
+        fatturato_complessivo = (aggregati['totale_imponibile'] or Decimal('0.00')) + (aggregati['totale_iva'] or Decimal('0.00'))
+        
+        # Calcola il totale pagato
+        pagato = self.fatture_acquisto.aggregate(
+            totale_pagato=Sum('scadenze_acquisto__pagamenti__importo_pagato')
+        )['totale_pagato'] or Decimal('0.00')
+        
+        return fatturato_complessivo - pagato
 
     def get_absolute_url(self):
         return reverse('fornitori:dettaglio_fornitore', kwargs={'pk': self.pk})
@@ -56,10 +59,10 @@ class Fornitore(models.Model):
     def clean(self):
         if not self.partita_iva and not self.codice_fiscale:
             raise ValidationError("Inserire almeno Partita IVA o Codice Fiscale")
-    
+
     def __str__(self):
         return self.ragione_sociale
-    
+
     class Meta:
         verbose_name = "Fornitore"
         verbose_name_plural = "Fornitori"

@@ -17,8 +17,7 @@
     <div class="anagrafica-col">
       <div><strong>Numero:</strong> {{ fattura.numero }}</div>
       <div>
-        <strong>Data Emissione:</strong> {{ fattura.data_emissione|date:"d/m/Y"
-        }}
+        <strong>Data Emissione:</strong> {{ fattura.data_emissione|date:"d/m/Y"}}
       </div>
     </div>
     <div class="anagrafica-col">
@@ -84,8 +83,7 @@
           € {{ scadenza.residuo_calcolato|floatformat:2 }}
         </td>
         <td style="text-align: center">
-          {# Logica corretta per visualizzare il badge in base allo stato #} {%
-          if scadenza.stato != 'pagata' %}
+          {# Logica corretta per visualizzare il badge in base allo stato #} {% if scadenza.stato != 'pagata' %}
           <span
             class="badge {% if scadenza.is_scaduta %}danger{% else %}warning{% endif %} open-modal-btn"
             style="cursor: pointer"

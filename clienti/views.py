@@ -15,9 +15,9 @@ def lista_clienti(request):
     # usando il totale fattura IVA inclusa per il calcolo del residuo.
     clienti = Cliente.objects.annotate(
         # Fatturato Totale (Imponibile) per la visualizzazione
-        total_fatturato=Coalesce(Sum('fatture__importo_totale'), Decimal('0.00')),
+        total_fatturato=Coalesce(Sum('fatture__importo_totale', distinct=True), Decimal('0.00')),
         # Totale IVA per calcolare il totale complessivo
-        total_iva=Coalesce(Sum(F('fatture__importo_totale') * F('fatture__aliquota_iva') / 100), Decimal('0.00')),
+        total_iva=Coalesce(Sum(F('fatture__importo_totale') * F('fatture__aliquota_iva') / 100, distinct=True), Decimal('0.00')),
         # Totale Incassato
         total_incassato=Coalesce(Sum('fatture__scadenze__incassi__importo_incassato'), Decimal('0.00'))
     ).annotate(

@@ -33,26 +33,29 @@ def scadenziario(request):
             if incasso_form.is_valid():
                 scadenza_id = request.POST.get('scadenza_id')
                 scadenza = get_object_or_404(ScadenzaFattura, id=scadenza_id)
-                try:
+                
+                # CORREZIONE: Esegui la validazione qui, prima di salvare.
+                if scadenza.fattura.stato == 'bozza':
+                    incasso_form.add_error(None, "Operazione non permessa: non è possibile registrare un incasso per una fattura in stato 'Bozza'.")
+                else:
                     incasso = incasso_form.save(commit=False)
                     incasso.scadenza = scadenza
                     incasso.save()
                     return redirect('fatture:scadenziario')
-                except ValidationError as e:
-                    incasso_form.add_error(None, e)
         elif form_type == 'spesa':
             spesa_form = SpesaForm(request.POST)
             incasso_form = IncassoForm()
             if spesa_form.is_valid():
                 scadenza_id = request.POST.get('scadenza_id')
                 scadenza = get_object_or_404(ScadenzaFatturaAcquisto, id=scadenza_id)
-                try:
+
+                if scadenza.fattura_acquisto.stato == 'da_registrare':
+                    spesa_form.add_error(None, "Operazione non permessa: non è possibile registrare un pagamento per una fattura di acquisto non ancora registrata.")
+                else:
                     spesa = spesa_form.save(commit=False)
                     spesa.scadenza = scadenza
                     spesa.save()
                     return redirect('fatture:scadenziario')
-                except ValidationError as e:
-                    spesa_form.add_error(None, e)
     else:
         incasso_form = IncassoForm()
         spesa_form = SpesaForm()
@@ -134,13 +137,14 @@ def dettaglio_fattura(request, pk):
         if form.is_valid():
             scadenza_id = request.POST.get('scadenza_id')
             scadenza = get_object_or_404(ScadenzaFattura, id=scadenza_id)
-            try:
+            
+            if scadenza.fattura.stato == 'bozza':
+                form.add_error(None, "Operazione non permessa: non è possibile registrare un incasso per una fattura in stato 'Bozza'.")
+            else:
                 incasso = form.save(commit=False)
                 incasso.scadenza = scadenza
                 incasso.save()
                 return redirect('fatture:dettaglio_fattura', pk=fattura.pk)
-            except ValidationError as e:
-                form.add_error(None, e)
     
     incasso_form = form if request.method == 'POST' and not form.is_valid() else IncassoForm()
     

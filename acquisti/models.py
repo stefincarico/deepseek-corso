@@ -58,7 +58,7 @@ class FatturaAcquisto(models.Model):
         return self.totale_complessivo() - self.importo_pagato()
 
     def stato_automatico(self):
-        if not self.pk:
+        if not self.pk or self.stato == 'da_registrare':
             return 'da_registrare'
         importo_pagato = self.importo_pagato()
         if importo_pagato >= self.totale_complessivo():
@@ -69,7 +69,8 @@ class FatturaAcquisto(models.Model):
             return 'registrata'
 
     def save(self, *args, **kwargs):
-        self.stato = self.stato_automatico()
+        if self.stato != 'da_registrare':
+            self.stato = self.stato_automatico()
         super().save(*args, **kwargs)
 
     def __str__(self):

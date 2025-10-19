@@ -29,8 +29,10 @@
       <label for="id_data_a">Al</label>
       <input type="date" name="data_a" id="id_data_a" value="{{ request.GET.data_a|default:'' }}">
     </div>
-    <button type="submit" class="button-primary">Filtra</button>
-    <a href="{% url 'fatture:scadenziario' %}" class="button">Reset</a>
+    <div class="form-group filter-actions">
+      <button type="submit" class="button-primary">Filtra</button>
+      <a href="{% url 'fatture:scadenziario' %}" class="button">Reset</a>
+    </div>
   </form>
 
   <table class="table">
@@ -86,10 +88,32 @@
     <h2>Registra Incasso</h2>
     <p id="modalIncassoInfo"></p>
     <form method="post">
+      {% if incasso_form.non_field_errors %}
+        <div class="message error">{{ incasso_form.non_field_errors }}</div>
+      {% endif %}
       {% csrf_token %}
       <input type="hidden" name="form_type" value="incasso">
       <input type="hidden" name="scadenza_id" id="incasso_scadenza_id">
-      {{ incasso_form.as_p }}
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_data_incasso">Data Incasso</label>
+          {{ incasso_form.data_incasso }}
+        </div>
+        <div class="form-group">
+          <label for="id_importo_incassato">Importo Incassato</label>
+          {{ incasso_form.importo_incassato }}
+        </div>
+        <div class="form-group">
+          <label for="id_conto_bancario">Conto di Accredito</label>
+          {{ incasso_form.conto_bancario }}
+        </div>
+        <div class="form-group">
+          <label for="id_metodo_pagamento">Metodo Pagamento</label>
+          {{ incasso_form.metodo_pagamento }}
+        </div>
+      </div>
+      
       <button type="submit" class="button-primary">Salva Incasso</button>
     </form>
   </div>
@@ -102,10 +126,32 @@
     <h2>Registra Pagamento</h2>
     <p id="modalSpesaInfo"></p>
     <form method="post">
+      {% if spesa_form.non_field_errors %}
+        <div class="message error">{{ spesa_form.non_field_errors }}</div>
+      {% endif %}
       {% csrf_token %}
       <input type="hidden" name="form_type" value="spesa">
       <input type="hidden" name="scadenza_id" id="spesa_scadenza_id">
-      {{ spesa_form.as_p }}
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_data_pagamento">Data Pagamento</label>
+          {{ spesa_form.data_pagamento }}
+        </div>
+        <div class="form-group">
+          <label for="id_importo_pagato">Importo Pagato</label>
+          {{ spesa_form.importo_pagato }}
+        </div>
+        <div class="form-group">
+          <label for="id_conto_bancario">Conto di Addebito</label>
+          {{ spesa_form.conto_bancario }}
+        </div>
+        <div class="form-group">
+          <label for="id_metodo_pagamento">Metodo Pagamento</label>
+          {{ spesa_form.metodo_pagamento }}
+        </div>
+      </div>
+
       <button type="submit" class="button-primary">Salva Pagamento</button>
     </form>
   </div>
@@ -113,6 +159,9 @@
 
 <style>
   .filter-form { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 2rem; background: #f8f9fa; padding: 1rem; border-radius: 8px; }
+  /* CORREZIONE: Sovrascrive la direzione della flexbox per allineare i pulsanti orizzontalmente */
+  .filter-form .filter-actions { flex-direction: row; gap: 0.5rem; }
+  
   .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
   .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
   .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -160,6 +209,16 @@ document.addEventListener('DOMContentLoaded', function() {
             event.target.style.display = 'none';
         }
     });
+
+    // Se la pagina viene ricaricata con errori in uno dei form,
+    // apri la modale corrispondente per mostrare l'errore.
+    {% if incasso_form.errors %}
+        const incassoModal = document.getElementById('incassoModal');
+        incassoModal.style.display = 'block';
+    {% elif spesa_form.errors %}
+        const spesaModal = document.getElementById('spesaModal');
+        spesaModal.style.display = 'block';
+    {% endif %}
 });
 </script>
 {% endblock %}

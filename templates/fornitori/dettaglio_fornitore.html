@@ -138,12 +138,10 @@
         </td>
         <td>{{ movimento.descrizione }}</td>
         <td style="text-align: right; color: #e74c3c">
-          {% if movimento.importo_dare %}+ €{{
-          movimento.importo_dare|floatformat:2 }}{% endif %}
+          {% if movimento.importo_dare %}+ €{{ movimento.importo_dare|floatformat:2 }}{% endif %}
         </td>
         <td style="text-align: right; color: green">
-          {% if movimento.importo_avere %}- €{{
-          movimento.importo_avere|floatformat:2 }}{% endif %}
+          {% if movimento.importo_avere %}- €{{ movimento.importo_avere|floatformat:2 }}{% endif %}
         </td>
       </tr>
       {% empty %}
